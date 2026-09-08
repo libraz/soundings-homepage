@@ -14,7 +14,7 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": false,
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "types": ["vite/client"],
+    "types": ["vite/client", "node"],
     "paths": {
       "@/*": ["./src/*"],
       "@theme/*": ["./.vitepress/theme/*"]

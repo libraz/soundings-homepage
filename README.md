@@ -43,13 +43,14 @@ yarn build
 # Preview production build
 yarn preview
 
-# Run every gate: data integrity, vocabulary coverage, en/ja parity, doc links
+# Run every gate: types, data integrity, vocabulary coverage, en/ja parity, doc links
 yarn check
 
 # Full pre-release gate: check + tests + production build
 yarn verify
 
 # Individual gates, when narrowing a failure
+yarn check:types
 yarn check:data
 yarn check:vocab
 yarn check:i18n
@@ -58,6 +59,10 @@ yarn check:docs
 # Emulator tests
 yarn test
 ```
+
+`yarn check:types` covers the TypeScript sources. It does not reach inside a
+single-file component's template, because the tool that does needs an entry
+point TypeScript 7 no longer publishes.
 
 ## License
 

@@ -210,11 +210,17 @@ watch(query, (value) => {
 
       <label class="field field--grow">
         <span class="sg-label">{{ t('search.address') }}</span>
+        <!--
+          No inputmode: the field takes hex bytes, and nothing in the attribute
+          asks for a Latin keyboard. `latin` did, and was dropped from the spec
+          without a replacement, so asking for it again only puts an invalid
+          value in the markup.
+        -->
         <input
           v-model="query"
           class="field__control sg-readout"
           type="search"
-          inputmode="latin"
+          autocapitalize="off"
           autocomplete="off"
           spellcheck="false"
           :placeholder="t('search.placeholder')"
