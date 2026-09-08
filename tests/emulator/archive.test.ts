@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { expandRegion, parseAddress } from '@/emulator/address.js';
+import { findQuirk, indexDataset } from '@/emulator/dataset.js';
 import { createDevice } from '@/emulator/device.js';
 import { rolandProtocol } from '@/emulator/protocol.js';
 import { parseHexBytes } from '@/emulator/sysex.js';
@@ -181,5 +182,32 @@ describe('the SC-8850 record', () => {
     expect(message.outcome).not.toBe('silenced');
     expect(withoutQuirks.state).toBe('alive');
     expect(withoutQuirks.read('40 01 41').answered).toBe(true);
+  });
+});
+
+describe('what the emulator console offers to send', () => {
+  const index = indexDataset(dataset);
+
+  it('reads the frame shape off the record rather than off the model name', () => {
+    expect(index.protocol?.family).toBe('roland');
+    expect(index.protocol?.addressLength).toBe(3);
+    expect(index.modelId).toBe(MODEL_ID);
+  });
+
+  it('finds an address to read and write without one being written into the page', () => {
+    const writable = index.order.find((address) => index.addresses.get(address)?.rule);
+    expect(writable).toBeDefined();
+    const outOfRange = index.order.find((address) => {
+      const rule = index.addresses.get(address)?.rule;
+      return rule && (rule[0] === 'C' || rule[0] === 'F');
+    });
+    expect(outOfRange).toBeDefined();
+  });
+
+  it('still has the quirks the surprising presets are built from', () => {
+    expect(findQuirk(dataset.quirks, 'silence-on-oversized-read')?.rule.minSize).toBeGreaterThan(0);
+    expect(findQuirk(dataset.quirks, 'not-a-read')?.rule.address).toBeTruthy();
+    expect(findQuirk(dataset.quirks, 'scaled-alias')).not.toBeNull();
+    expect(findQuirk(dataset.quirks, 'bank-latch')).not.toBeNull();
   });
 });
