@@ -63,6 +63,11 @@ export default defineConfig({
   srcDir: 'src',
   cleanUrls: true,
   lastUpdated: false,
+  // The route hash map is otherwise inlined into every page, so a site of n
+  // pages carries n copies of a map whose size grows with n. At one unit that
+  // is 82% of a block page and 52 MB of the output; the cost is quadratic, so
+  // it is the second unit that makes it matter.
+  metaChunk: true,
   title: 'soundings',
   description: en.site.description,
   head: [
