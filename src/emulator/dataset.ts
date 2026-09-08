@@ -8,7 +8,8 @@
  */
 
 import { expandRegion, parseAddress } from './address.js';
-import { COMMAND_DT1, parseHexBytes, ROLAND_ID } from './sysex.js';
+import { deriveModelId, type Protocol, resolveProtocol } from './protocol.js';
+import { parseHexBytes } from './sysex.js';
 import type {
   DatasetRegion,
   DeviceDataset,
@@ -78,6 +79,8 @@ export interface DatasetIndex {
   windowBlocks: Set<number>;
   /** The blocks a windowed address can be a view of. */
   windowOnto: number[];
+  /** The reader for this unit's frames, or null when the site has none. */
+  protocol: Protocol | null;
   /** The model byte the unit's own frames carry, or null when unrecorded. */
   modelId: number | null;
   identityReply: number[] | null;
@@ -143,27 +146,6 @@ export function findQuirk<K extends keyof QuirkRuleByKind>(
   return null;
 }
 
-/**
- * The model byte this unit's DT1 and RQ1 frames carry.
- *
- * The dataset does not state it outright, so it is read off a frame the archive
- * recorded: the reset messages first, then the identity reply's family byte.
- * A dataset with neither leaves it null, and the emulator says so rather than
- * assuming the byte every Roland unit of one era happened to use.
- */
-function deriveModelId(dataset: DeviceDataset): number | null {
-  for (const reset of dataset.resets ?? []) {
-    if (!reset.message) continue;
-    const bytes = parseHexBytes(reset.message);
-    if (bytes[1] === ROLAND_ID && bytes[4] === COMMAND_DT1) return bytes[3];
-  }
-  if (dataset.identityReply) {
-    const bytes = parseHexBytes(dataset.identityReply);
-    if (bytes[5] === ROLAND_ID) return bytes[6];
-  }
-  return null;
-}
-
 /** Build every lookup the emulator reads, once per dataset. */
 export function indexDataset(dataset: DeviceDataset): DatasetIndex {
   const addresses = new Map<string, AddressEntry>();
@@ -210,6 +192,7 @@ export function indexDataset(dataset: DeviceDataset): DatasetIndex {
   }));
 
   const toByte = (text: string) => Number.parseInt(text, 16);
+  const protocol = resolveProtocol(dataset);
 
   return {
     addresses,
@@ -221,7 +204,8 @@ export function indexDataset(dataset: DeviceDataset): DatasetIndex {
     doesNotRespondTo: new Set((dataset.deviceId?.doesNotRespondTo ?? []).map(toByte)),
     windowBlocks: new Set((dataset.window?.blocks ?? []).map(toByte)),
     windowOnto: (dataset.window?.onto ?? []).map(toByte),
-    modelId: deriveModelId(dataset),
+    protocol,
+    modelId: protocol ? deriveModelId(dataset, protocol) : null,
     identityReply: dataset.identityReply ? parseHexBytes(dataset.identityReply) : null,
   };
 }

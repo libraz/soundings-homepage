@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { parseAddress } from '@/emulator/address.js';
 import { createDevice } from '@/emulator/device.js';
-import { buildDt1, buildRq1, parseRolandFrame, rolandChecksum } from '@/emulator/sysex.js';
+import { rolandProtocol } from '@/emulator/protocol.js';
+import { rolandChecksum } from '@/emulator/sysex.js';
+
+const gs = rolandProtocol(3);
+
 import type { Device } from '@/emulator/types.js';
 import { controlChange, fixtureDataset, nrpn, programChange } from './fixture.js';
 
@@ -9,11 +13,11 @@ const DEVICE_ID = 0x10;
 const MODEL_ID = 0x42;
 
 function rq1(address: string, size: number, deviceId = DEVICE_ID): number[] {
-  return buildRq1(deviceId, MODEL_ID, parseAddress(address), size);
+  return gs.buildRead(deviceId, MODEL_ID, parseAddress(address), size);
 }
 
 function dt1(address: string, data: number[], deviceId = DEVICE_ID): number[] {
-  return buildDt1(deviceId, MODEL_ID, parseAddress(address), data);
+  return gs.buildWrite(deviceId, MODEL_ID, parseAddress(address), data);
 }
 
 describe('device', () => {
@@ -34,7 +38,7 @@ describe('device', () => {
     it('replies with a DT1 whose checksum is correct', () => {
       const [message] = device.receive(rq1('10 00 00', 3)).messages;
       expect(message.kind).toBe('rq1');
-      const reply = parseRolandFrame(message.reply ?? []);
+      const reply = gs.parse(message.reply ?? []);
       expect(reply?.checksumOk).toBe(true);
       expect(reply?.command).toBe(0x12);
       expect(reply?.body).toEqual([0x10, 0x00, 0x00, 0x00, 0x01, 0x02]);

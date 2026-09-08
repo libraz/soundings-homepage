@@ -28,7 +28,7 @@ import { handleControlChange, handleProgramChange } from './channel-messages.js'
 import { clearVolatileState, createContext, loadPowerOnValues } from './context.js';
 import { CONTROL_CHANGE, PROGRAM_CHANGE, type RawMessage, splitMessages } from './midi.js';
 import { datasetCitation } from './results.js';
-import { buildRq1 } from './sysex.js';
+
 import { handleSysex } from './sysex-messages.js';
 import type {
   Device,
@@ -135,7 +135,8 @@ export function createDevice(dataset: DeviceDataset): Device {
 
   function read(address: string): ReadResult {
     const deviceId = [...context.index.respondsTo][0];
-    if (deviceId === undefined || context.index.modelId === null) {
+    const protocol = context.index.protocol;
+    if (deviceId === undefined || protocol === null || context.index.modelId === null) {
       return {
         address,
         effectiveAddress: address,
@@ -149,10 +150,10 @@ export function createDevice(dataset: DeviceDataset): Device {
             'the dataset does not say which frame this unit answers to',
           ),
         ],
-        note: 'no RQ1 can be built for this unit without inventing a byte of it',
+        note: 'no read request can be built for this unit without inventing a byte of it',
       };
     }
-    const frame = buildRq1(deviceId, context.index.modelId, parseAddress(address), 1);
+    const frame = protocol.buildRead(deviceId, context.index.modelId, parseAddress(address), 1);
     const result = receive(frame).messages[0];
     const value = result.detail.values?.[0] ?? null;
     return {

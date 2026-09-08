@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { parseAddress } from '@/emulator/address.js';
 import { createDevice } from '@/emulator/device.js';
-import { buildDt1, buildRq1, parseHexBytes } from '@/emulator/sysex.js';
+import { rolandProtocol } from '@/emulator/protocol.js';
+import { parseHexBytes } from '@/emulator/sysex.js';
+
+const gs = rolandProtocol(3);
+
 import type { Device } from '@/emulator/types.js';
 import { controlChange, fixtureDataset, programChange, rpn } from './fixture.js';
 
@@ -9,11 +13,11 @@ const DEVICE_ID = 0x10;
 const MODEL_ID = 0x42;
 
 function rq1(address: string, size: number): number[] {
-  return buildRq1(DEVICE_ID, MODEL_ID, parseAddress(address), size);
+  return gs.buildRead(DEVICE_ID, MODEL_ID, parseAddress(address), size);
 }
 
 function dt1(address: string, data: number[]): number[] {
-  return buildDt1(DEVICE_ID, MODEL_ID, parseAddress(address), data);
+  return gs.buildWrite(DEVICE_ID, MODEL_ID, parseAddress(address), data);
 }
 
 describe('quirks', () => {

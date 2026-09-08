@@ -4,9 +4,8 @@ import { useArchiveFile } from '../composables/useArchive';
 import { useI18n } from '../composables/useI18n';
 import type { Citation, Device, DeviceDataset, MessageResult, Outcome } from '../emulator';
 import {
-  buildDt1,
-  buildRq1,
   createDevice,
+  findQuirk,
   formatHexBytes,
   indexDataset,
   parseAddress,
@@ -64,54 +63,88 @@ watch(
 const presets = computed(() => {
   const data = dataset.value;
   if (!data) return [];
-  // The device id and the model id both come out of the archive: the first
-  // from the ids this unit was measured to answer, the second from the frames
-  // it answered them in. Neither is written down here.
+  // Everything below comes out of the archive: the device id from the ids this
+  // unit was measured to answer, the model id and the frame shape from the
+  // frames it answered them in, and every address from a region or a quirk that
+  // names one. No address, size or behaviour id is written down here, so a unit
+  // measured through frames this site cannot read still gets the presets that
+  // are recorded whole — its resets and an identity request — and no others.
+  const index = indexDataset(data);
+  const { protocol, modelId } = index;
   const deviceId = Number.parseInt(data.deviceId.respondsTo[0] ?? '10', 16);
-  const modelId = indexDataset(data).modelId;
-  if (modelId === null) return [];
+
   const entries: { label: string; bytes: number[]; note?: string }[] = [
     {
       label: 'Identity Request',
       bytes: [0xf0, 0x7e, 0x7f, 0x06, 0x01, 0xf7],
     },
-    {
-      label: 'RQ1 40 11 30, 1 byte',
-      bytes: buildRq1(deviceId, modelId, parseAddress('40 11 30'), 1),
-    },
-    {
-      label: 'RQ1 40 11 30, 256 bytes',
-      bytes: buildRq1(deviceId, modelId, parseAddress('40 11 30'), 256),
-      note: 'rq1-large-size-hangs-the-unit',
-    },
-    {
-      label: 'DT1 40 11 30 = 7F',
-      bytes: buildDt1(deviceId, modelId, parseAddress('40 11 30'), [0x7f]),
-    },
-    {
-      label: 'DT1 40 11 02 = 7F (out of range)',
-      bytes: buildDt1(deviceId, modelId, parseAddress('40 11 02'), [0x7f]),
-    },
-    {
-      label: 'CC7 = 100, ch 1',
-      bytes: [0xb0, 0x07, 100],
-    },
-    {
+  ];
+
+  /** An address the write probe reached, which is what makes a write worth showing. */
+  const writable = index.order.find((address) => index.addresses.get(address)?.rule);
+  /** An address the unit was measured refusing or clamping a value at. */
+  const outOfRange = index.order.find((address) => {
+    const rule = index.addresses.get(address)?.rule;
+    return rule && (rule[0] === 'C' || rule[0] === 'F');
+  });
+
+  if (protocol && modelId !== null) {
+    const read = (address: string, size: number) =>
+      protocol.buildRead(deviceId, modelId, parseAddress(address), size);
+    const write = (address: string, data: number[]) =>
+      protocol.buildWrite(deviceId, modelId, parseAddress(address), data);
+
+    const probe = writable ?? index.order[0];
+    if (probe) {
+      entries.push({ label: `read ${probe}, 1 byte`, bytes: read(probe, 1) });
+      entries.push({ label: `write ${probe} = 7F`, bytes: write(probe, [0x7f]) });
+    }
+    if (outOfRange && outOfRange !== probe) {
+      entries.push({
+        label: `write ${outOfRange} = 7F (outside the range measured)`,
+        bytes: write(outOfRange, [0x7f]),
+      });
+    }
+
+    const oversize = findQuirk(data.quirks, 'silence-on-oversized-read');
+    if (oversize && probe) {
+      entries.push({
+        label: `read ${probe}, ${oversize.rule.minSize} bytes`,
+        bytes: read(probe, oversize.rule.minSize),
+        note: oversize.id,
+      });
+    }
+
+    const notARead = findQuirk(data.quirks, 'not-a-read');
+    if (notARead) {
+      entries.push({
+        label: `read ${notARead.rule.address}, 1 byte`,
+        bytes: read(notARead.rule.address, 1),
+        note: notARead.id,
+      });
+    }
+  }
+
+  entries.push({ label: 'CC7 = 100, ch 1', bytes: [0xb0, 0x07, 100] });
+
+  const scaled = findQuirk(data.quirks, 'scaled-alias');
+  if (scaled) {
+    entries.push({
       label: 'RPN 00 05 = 3, ch 1',
       bytes: [0xb0, 0x65, 0x00, 0xb0, 0x64, 0x05, 0xb0, 0x06, 3],
-      note: 'rpn-modulation-depth-range-is-stored-scaled-and-clamped-not-verbatim',
-    },
-    {
+      note: scaled.id,
+    });
+  }
+
+  const bankLatch = findQuirk(data.quirks, 'bank-latch');
+  if (bankLatch) {
+    entries.push({
       label: 'CC0 = 3, then Program Change 0',
       bytes: [0xb0, 0x00, 3, 0xc0, 0x00],
-      note: 'bank-select-is-a-latch-that-a-program-change-commits-or-discards-whole',
-    },
-    {
-      label: 'RQ1 0C 00 00, 1 byte',
-      bytes: buildRq1(deviceId, modelId, parseAddress('0C 00 00'), 1),
-      note: 'rq1-0c0000-is-a-command-not-a-read',
-    },
-  ];
+      note: bankLatch.id,
+    });
+  }
+
   for (const reset of data.resets) {
     if (!reset.message) continue;
     entries.push({ label: reset.name, bytes: parseHexBytes(reset.message) });

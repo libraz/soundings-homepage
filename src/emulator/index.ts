@@ -21,14 +21,13 @@ export type { AddressEntry, AliasStimulus, DatasetIndex, IndexedAlias } from './
 export { findQuirk, flattenRuns, indexDataset, parseRange, parseStimulus } from './dataset.js';
 export { createDevice } from './device.js';
 export { splitMessages } from './midi.js';
+export type { ParsedFrame, Protocol } from './protocol.js';
 export {
-  buildDt1,
-  buildRq1,
-  bytesToSize,
-  formatHexBytes,
-  parseHexBytes,
-  parseRolandFrame,
-  rolandChecksum,
-  sizeToBytes,
-} from './sysex.js';
+  deriveAddressLength,
+  deriveManufacturerId,
+  deriveModelId,
+  resolveProtocol,
+  rolandProtocol,
+} from './protocol.js';
+export { formatHexBytes, parseHexBytes, rolandChecksum } from './sysex.js';
 export type * from './types.js';

@@ -1,15 +1,14 @@
 import { describe, expect, it } from 'vitest';
+import { rolandProtocol } from '@/emulator/protocol.js';
 import {
-  buildDt1,
-  buildRq1,
-  bytesToSize,
   formatHexBytes,
   isIdentityRequest,
   parseHexBytes,
-  parseRolandFrame,
   rolandChecksum,
-  sizeToBytes,
 } from '@/emulator/sysex.js';
+
+/** The frame shape the GS modules were measured through. */
+const gs = rolandProtocol(3);
 
 describe('Roland framing', () => {
   it('computes the checksum the archive recorded', () => {
@@ -19,34 +18,35 @@ describe('Roland framing', () => {
     expect(rolandChecksum([0x7f])).toBe(1);
   });
 
-  it('builds a DT1 whose checksum closes the frame', () => {
-    const frame = buildDt1(0x10, 0x42, [0x40, 0x11, 0x19], [0x64]);
+  it('builds a write whose checksum closes the frame', () => {
+    const frame = gs.buildWrite(0x10, 0x42, [0x40, 0x11, 0x19], [0x64]);
     expect(formatHexBytes(frame)).toBe('F0 41 10 42 12 40 11 19 64 32 F7');
-    const parsed = parseRolandFrame(frame);
+    const parsed = gs.parse(frame);
     expect(parsed?.checksumOk).toBe(true);
     expect(parsed?.command).toBe(0x12);
     expect(parsed?.deviceId).toBe(0x10);
     expect(parsed?.modelId).toBe(0x42);
   });
 
-  it('builds an RQ1 carrying a three-byte seven-bit size', () => {
-    const frame = buildRq1(0x10, 0x42, [0x40, 0x11, 0x00], 256);
-    const parsed = parseRolandFrame(frame);
+  it('builds a read carrying a three-byte seven-bit size', () => {
+    const frame = gs.buildRead(0x10, 0x42, [0x40, 0x11, 0x00], 256);
+    const parsed = gs.parse(frame);
     expect(parsed?.checksumOk).toBe(true);
     expect(parsed?.body.slice(3)).toEqual([0x00, 0x02, 0x00]);
-    expect(bytesToSize(parsed?.body.slice(3) ?? [])).toBe(256);
+    expect(gs.sizeOf(parsed?.body.slice(3) ?? [])).toBe(256);
   });
 
   it('rejects a frame whose checksum does not match its body', () => {
-    const frame = buildDt1(0x10, 0x42, [0x40, 0x11, 0x19], [0x64]);
+    const frame = gs.buildWrite(0x10, 0x42, [0x40, 0x11, 0x19], [0x64]);
     const tampered = [...frame];
     tampered[8] = 0x65;
-    expect(parseRolandFrame(tampered)?.checksumOk).toBe(false);
+    expect(gs.parse(tampered)?.checksumOk).toBe(false);
   });
 
   it('round-trips a size through its seven-bit bytes', () => {
     for (const size of [0, 1, 127, 128, 200, 256, 16383, 16384]) {
-      expect(bytesToSize(sizeToBytes(size))).toBe(size);
+      const body = gs.parse(gs.buildRead(0x10, 0x42, [0x40, 0x00, 0x00], size))?.body ?? [];
+      expect(gs.sizeOf(body.slice(3))).toBe(size);
     }
   });
 
@@ -61,7 +61,26 @@ describe('Roland framing', () => {
   });
 
   it('is not fooled by a frame that is not Roland', () => {
-    expect(parseRolandFrame([0xf0, 0x7e, 0x7f, 0x09, 0x01, 0xf7])).toBeNull();
-    expect(parseRolandFrame([0xf0, 0x41, 0x10])).toBeNull();
+    expect(gs.parse([0xf0, 0x7e, 0x7f, 0x09, 0x01, 0xf7])).toBeNull();
+    expect(gs.parse([0xf0, 0x41, 0x10])).toBeNull();
+  });
+});
+
+describe('an address width other than the first unit measured', () => {
+  const wide = rolandProtocol(4);
+
+  it('puts the size after four address bytes rather than three', () => {
+    const frame = wide.buildRead(0x10, 0x6a, [0x00, 0x08, 0x20, 0x00], 1);
+    expect(formatHexBytes(frame)).toBe('F0 41 10 6A 11 00 08 20 00 00 00 01 57 F7');
+    const parsed = wide.parse(frame);
+    expect(parsed?.checksumOk).toBe(true);
+    expect(wide.sizeOf(parsed?.body.slice(4) ?? [])).toBe(1);
+  });
+
+  it('keeps the whole address in a write, leaving the rest as data', () => {
+    const frame = wide.buildWrite(0x10, 0x6a, [0x00, 0x08, 0x20, 0x00], [0x40]);
+    const parsed = wide.parse(frame);
+    expect(parsed?.body.slice(0, 4)).toEqual([0x00, 0x08, 0x20, 0x00]);
+    expect(parsed?.body.slice(4)).toEqual([0x40]);
   });
 });

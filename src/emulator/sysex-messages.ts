@@ -11,16 +11,10 @@
 import { addOffset, blockLabel, formatAddress, formatByte } from './address.js';
 import { type DeviceContext, goSilent } from './context.js';
 import { readSpan, resolveAddress, writeByte } from './memory.js';
+import { frameAddress, type Protocol } from './protocol.js';
 import { runReset } from './resets.js';
 import { behaviourCitation, datasetCitation, summariseOutcome } from './results.js';
-import {
-  buildDt1,
-  bytesToSize,
-  COMMAND_DT1,
-  COMMAND_RQ1,
-  isIdentityRequest,
-  parseRolandFrame,
-} from './sysex.js';
+import { isIdentityRequest } from './sysex.js';
 import type { AddressChange, AddressEffect, MessageDetail, MessageResult } from './types.js';
 
 function sameBytes(left: number[], right: number[]): boolean {
@@ -35,9 +29,14 @@ export function handleRq1(
   modelId: number,
   body: number[],
 ): MessageResult {
-  const { quirks } = context;
-  const requested = formatAddress(body.slice(0, 3));
-  const size = bytesToSize(body.slice(3, 6));
+  const { quirks, index } = context;
+  // Resolved before this point: a frame cannot reach a handler without a reader
+  // that produced it.
+  const protocol = index.protocol as Protocol;
+  const requested = frameAddress(protocol, body);
+  const size = protocol.sizeOf(
+    body.slice(protocol.addressLength, protocol.addressLength + protocol.sizeLength),
+  );
   const detail: MessageDetail = { deviceId, modelId, address: requested, size, checksumOk: true };
 
   if (quirks.notARead && requested === quirks.notARead.rule.address) {
@@ -162,10 +161,10 @@ export function handleRq1(
   const span = readSpan(context, resolved.address, size);
   detail.values = span.values;
   const reply = span.answered
-    ? buildDt1(
+    ? protocol.buildWrite(
         deviceId,
         modelId,
-        body.slice(0, 3),
+        body.slice(0, protocol.addressLength),
         span.values.map((value) => Number.parseInt(value as string, 16)),
       )
     : null;
@@ -190,8 +189,9 @@ export function handleDt1(
   modelId: number,
   body: number[],
 ): MessageResult {
-  const base = body.slice(0, 3);
-  const data = body.slice(3);
+  const protocol = context.index.protocol as Protocol;
+  const base = body.slice(0, protocol.addressLength);
+  const data = body.slice(protocol.addressLength);
   const requested = formatAddress(base);
   const detail: MessageDetail = {
     deviceId,
@@ -330,7 +330,31 @@ export function handleSysex(
 
   if (isIdentityRequest(bytes)) return handleIdentityRequest(context, bytes);
 
-  const frame = parseRolandFrame(bytes);
+  // A unit whose frames no reader here understands still answers its resets and
+  // its identity request above, because those are recorded byte sequences rather
+  // than something parsed. Everything below needs the frame taken apart, and
+  // guessing at the layout would report an invention as a measurement.
+  const protocol = index.protocol;
+  if (!protocol) {
+    return {
+      kind: 'unrecognised',
+      bytes,
+      outcome: 'unmeasured',
+      reply: null,
+      effects: [],
+      changes: [],
+      citations: [
+        datasetCitation(
+          'resets',
+          'no frame this unit was measured through is one the site knows how to read',
+        ),
+      ],
+      detail: {},
+      note: 'this unit is answered only through the messages the archive recorded whole',
+    };
+  }
+
+  const frame = protocol.parse(bytes);
   if (!frame) {
     return {
       kind: 'unrecognised',
@@ -371,7 +395,11 @@ export function handleSysex(
   }
 
   const kind: MessageResult['kind'] =
-    frame.command === COMMAND_RQ1 ? 'rq1' : frame.command === COMMAND_DT1 ? 'dt1' : 'unrecognised';
+    frame.command === protocol.readCommand
+      ? 'rq1'
+      : frame.command === protocol.writeCommand
+        ? 'dt1'
+        : 'unrecognised';
 
   if (!frame.checksumOk) {
     return {
@@ -381,7 +409,9 @@ export function handleSysex(
       reply: null,
       effects: [],
       changes: [],
-      citations: [datasetCitation('protocol', 'the Roland checksum is part of the frame')],
+      citations: [
+        datasetCitation('protocol', `a checksum is part of every ${protocol.family} frame`),
+      ],
       detail,
       note: 'the checksum does not match the address and data it covers',
     };
@@ -391,8 +421,9 @@ export function handleSysex(
     return deviceIdRefusal(context, kind, bytes, frame.deviceId, detail);
   }
 
-  if (frame.command === COMMAND_RQ1) {
-    if (frame.body.length < 6) {
+  const readBodyLength = protocol.addressLength + protocol.sizeLength;
+  if (frame.command === protocol.readCommand) {
+    if (frame.body.length < readBodyLength) {
       return {
         kind,
         bytes,
@@ -402,13 +433,13 @@ export function handleSysex(
         changes: [],
         citations: [],
         detail,
-        note: 'an RQ1 carries three address bytes and three size bytes',
+        note: `a read request carries ${protocol.addressLength} address bytes and ${protocol.sizeLength} size bytes`,
       };
     }
     return handleRq1(context, bytes, frame.deviceId, frame.modelId, frame.body);
   }
-  if (frame.command === COMMAND_DT1) {
-    if (frame.body.length < 4) {
+  if (frame.command === protocol.writeCommand) {
+    if (frame.body.length < protocol.addressLength + 1) {
       return {
         kind,
         bytes,
@@ -418,7 +449,7 @@ export function handleSysex(
         changes: [],
         citations: [],
         detail,
-        note: 'a DT1 carries three address bytes and at least one data byte',
+        note: `a write carries ${protocol.addressLength} address bytes and at least one data byte`,
       };
     }
     return handleDt1(context, bytes, frame.deviceId, frame.modelId, frame.body);

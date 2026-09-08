@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { expandRegion, parseAddress } from '@/emulator/address.js';
 import { createDevice } from '@/emulator/device.js';
-import { buildDt1, buildRq1, parseHexBytes, parseRolandFrame } from '@/emulator/sysex.js';
+import { rolandProtocol } from '@/emulator/protocol.js';
+import { parseHexBytes } from '@/emulator/sysex.js';
+
+const gs = rolandProtocol(3);
+
 import type { DeviceDataset } from '@/emulator/types.js';
 import realDataset from '@/public/data/roland-sc8850-01/device.json';
 import { controlChange, programChange, rpn } from './fixture.js';
@@ -18,7 +22,7 @@ const DEVICE_ID = 0x10;
 const MODEL_ID = 0x42;
 
 function rq1(address: string, size: number, deviceId = DEVICE_ID): number[] {
-  return buildRq1(deviceId, MODEL_ID, parseAddress(address), size);
+  return gs.buildRead(deviceId, MODEL_ID, parseAddress(address), size);
 }
 
 describe('the SC-8850 record', () => {
@@ -40,7 +44,7 @@ describe('the SC-8850 record', () => {
   it('answers a read with the value the archive recorded, checksum and all', () => {
     const device = createDevice(dataset);
     const [message] = device.receive(rq1('40 11 19', 1)).messages;
-    const reply = parseRolandFrame(message.reply ?? []);
+    const reply = gs.parse(message.reply ?? []);
     expect(reply?.checksumOk).toBe(true);
     expect(reply?.body).toEqual([0x40, 0x11, 0x19, 0x64]);
     expect(device.read('40 11 19').value).toBe('64');
@@ -150,7 +154,7 @@ describe('the SC-8850 record', () => {
     const held = device.read('41 04 24').value;
     expect(device.read('42 04 24').value).toBe(held);
 
-    const write = buildDt1(DEVICE_ID, MODEL_ID, parseAddress('42 04 24'), [0x11]);
+    const write = gs.buildWrite(DEVICE_ID, MODEL_ID, parseAddress('42 04 24'), [0x11]);
     const [message] = device.receive(write).messages;
     expect(message.effects[0].address).toBe('41 04 24');
     expect(device.read('41 04 24').value).toBe('11');
