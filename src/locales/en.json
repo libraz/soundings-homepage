@@ -173,5 +173,28 @@
     "sourceRepo": "soundings on GitHub",
     "dataLicense": "Measurements are CC0 1.0",
     "notAffiliated": "Not affiliated with, or endorsed by, any instrument manufacturer. Product names identify the equipment measured."
+  },
+  "claims": {
+    "page": "p.{page}",
+    "stated": "What a document states",
+    "range": "Stated range",
+    "initial": "Stated initial value",
+    "describedAs": "Described as",
+    "width": "Width",
+    "widthBody": "The document says this parameter is {bytes} bytes wide. The write probe writes one byte at a time, so what it found here is about one byte of it and is not the same quantity.",
+    "unresolved": "The row continues onto a second line whose column the extraction could not settle: {cells}",
+    "absentHere": "Stated here, not measured",
+    "absentBody": "Addresses this block's document states and the archive holds no record of. Nobody asked about them; that is not the same as asking and hearing nothing.",
+    "verdict": {
+      "agrees": "agrees with the measurement",
+      "differs": "differs from the measurement",
+      "not measured": "not measured",
+      "not stated": "not stated",
+      "qualified": "the page says more than this cell",
+      "not asked": "this reset was not asked about it",
+      "wider than was measured": "wider than was measured",
+      "stated in words rather than as a value": "stated in words rather than as a value"
+    },
+    "measured": "measured {value}"
   }
 }

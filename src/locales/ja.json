@@ -173,5 +173,28 @@
     "sourceRepo": "GitHub の soundings",
     "dataLicense": "測定データは CC0 1.0",
     "notAffiliated": "本サイトはいかなる楽器メーカーとも提携・関連・公認の関係にありません。製品名は測定した機材を識別するために記載しています。"
+  },
+  "claims": {
+    "page": "p.{page}",
+    "stated": "文書の記載",
+    "range": "記載の範囲",
+    "initial": "記載の初期値",
+    "describedAs": "記載の説明",
+    "width": "幅",
+    "widthBody": "文書はこのパラメーターを {bytes} バイト幅としています。ライト・プローブは1バイトずつ書くため、ここで得られたものはその一部についてであり、同じ量ではありません。",
+    "unresolved": "行が次行に続いており、どの列に属するか抽出では確定できませんでした: {cells}",
+    "absentHere": "記載あり、未測定",
+    "absentBody": "このブロックについて文書が記載していて、アーカイブに記録がないアドレスです。誰も問うていないということであり、問うて何も返らなかったのとは異なります。",
+    "verdict": {
+      "agrees": "測定と一致",
+      "differs": "測定と相違",
+      "not measured": "未測定",
+      "not stated": "記載なし",
+      "qualified": "このセル以上のことをページが述べている",
+      "not asked": "このリセットについては問うていない",
+      "wider than was measured": "測定より広い幅",
+      "stated in words rather than as a value": "値ではなく文で記載"
+    },
+    "measured": "実測 {value}"
   }
 }

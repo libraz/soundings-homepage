@@ -185,6 +185,78 @@ export interface BlockShard {
   addresses: AddressRecord[];
 }
 
+/**
+ * What a published document states about one address.
+ *
+ * Held apart from `AddressRecord` in the type as it is on the page: a claim is
+ * evidence that a document said something, and never evidence about the unit.
+ * The verdicts are the relation between the two, and are only ever `agrees` or
+ * `differs` where both sides said something commensurable.
+ */
+export interface Claim {
+  /** address */
+  a: string;
+  /** the address as the document prints it, e.g. `40 1x 0A` */
+  t: string;
+  /** document id */
+  d: string;
+  /** printed page */
+  page: number;
+  parameter: string | null;
+  size: string | null;
+  data: string | null;
+  /** the stated range in the archive's own notation, for comparison */
+  dataRange: string | null;
+  description: string | null;
+  default: string | null;
+  defaultDescription: string | null;
+  /** cells of a continued row whose column the extraction could not settle */
+  unresolved: string[] | null;
+  /** how many bytes the document says the parameter occupies */
+  bytes: number | null;
+  range: string;
+  initial: string;
+  measuredRange: string | null;
+  poweredOn: string | null;
+  /** a note the page printed about this row, restated by hand */
+  q: {
+    restated: string;
+    page: number;
+    resets: { name: string; stated: string | null; measured: string | null; verdict: string }[];
+  } | null;
+}
+
+/** An address a document states and the archive holds no record of. */
+export interface AbsentClaim {
+  a: string;
+  t: string;
+  d: string;
+  block: string;
+  page: number;
+  parameter: string | null;
+  data: string | null;
+  default: string | null;
+}
+
+export interface CitedDocument {
+  id: string;
+  title: string;
+  publisher: string;
+  copyright: string;
+  printing: string | null;
+  language: string;
+  pagesRead: number;
+  pages: number;
+}
+
+export interface ClaimShard {
+  unitId: string;
+  block: string;
+  documents: CitedDocument[];
+  claims: Claim[];
+  absent: AbsentClaim[];
+}
+
 export interface Region {
   start: string;
   size: number;

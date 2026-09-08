@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import type { AddressRecord, BlockShard, Region, RegionIndex } from '../composables/useArchive';
+import type {
+  AddressRecord,
+  BlockShard,
+  ClaimShard,
+  Region,
+  RegionIndex,
+} from '../composables/useArchive';
 import {
   audibleWording,
   holdWording,
@@ -10,6 +16,7 @@ import {
 } from '../composables/useArchive';
 import { useI18n } from '../composables/useI18n';
 import AddressCard from './AddressCard.vue';
+import DocumentLink from './DocumentLink.vue';
 import StateChip from './StateChip.vue';
 
 /**
@@ -36,8 +43,27 @@ const {
   loading: shardLoading,
 } = useArchiveFile<BlockShard>(() => `${props.unitId}/blocks/${props.block}.json`);
 
+/**
+ * What documents state about this block, if any were read.
+ *
+ * Its absence is ordinary and is not an error: a block no document reaches has
+ * no claim file, and the page simply says nothing about documents. Only the
+ * measurements are required for the page to be worth showing.
+ */
+const { data: claimShard } = useArchiveFile<ClaimShard>(
+  () => `${props.unitId}/claims/${props.block}.json`,
+);
+
 const loading = computed(() => indexLoading.value || shardLoading.value);
 const failed = computed(() => indexError.value || shardError.value);
+
+function documentOf(id: string) {
+  return claimShard.value?.documents.find((candidate) => candidate.id === id);
+}
+
+function claimsFor(record: AddressRecord) {
+  return claimShard.value?.claims.filter((claim) => claim.a === record.a);
+}
 
 /** The block as the unit writes it: the route carries a dash, the panel a space. */
 const blockLabel = computed(() => props.block.replace('-', ' '));
@@ -216,18 +242,81 @@ onMounted(() => {
                     :record="record"
                     :region="regionOf(record)"
                     :index="regionIndex"
+                    :claims="claimsFor(record)"
+                    :documents="claimShard?.documents"
                   />
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
+
+        <!--
+          Addresses a document states in this block that the archive holds no
+          record of. Listed rather than passed over, because the difference
+          between an address nobody asked about and one that answered nothing is
+          the distinction this whole site is built to keep.
+        -->
+        <section v-if="claimShard?.absent.length" class="absent sg-sunk">
+          <h3 class="sg-label">{{ t('claims.absentHere') }}</h3>
+          <p class="absent__body">{{ t('claims.absentBody') }}</p>
+          <ul class="absent__list">
+            <li v-for="row in claimShard.absent" :key="`${row.d}-${row.a}`">
+              <span class="sg-readout">{{ row.a }}</span>
+              <span class="absent__parameter">{{ row.parameter ?? '—' }}</span>
+              <span v-if="row.data" class="sg-readout absent__range">{{ row.data }}</span>
+              <DocumentLink
+                v-if="documentOf(row.d)"
+                :document="documentOf(row.d)!"
+                :page="row.page"
+              />
+            </li>
+          </ul>
+        </section>
       </section>
     </template>
   </section>
 </template>
 
 <style scoped>
+/* Addresses a document states and the archive does not hold. */
+.absent {
+  margin-top: var(--space-6);
+  padding: var(--space-4);
+}
+
+.absent__body {
+  margin: 0.3rem 0 0.7rem;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.absent__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.absent__list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.2rem 0;
+  border-top: 1px dotted var(--sg-rule);
+}
+
+.absent__parameter {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.absent__range {
+  font-size: 0.78rem;
+  color: var(--color-text-tertiary);
+}
+
 /* The unit's header panel sits directly above, with nothing between them. */
 .block {
   margin-top: var(--space-8);
