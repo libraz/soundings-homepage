@@ -30,6 +30,24 @@ const units = readJson(join(dataDir, 'units.json')).units;
 const problems = [];
 let blocksChecked = 0;
 let addressesChecked = 0;
+/** Manufacturer byte -> the units whose frames carry it. */
+const makers = new Map();
+
+/**
+ * The manufacturer byte a unit's own frames carry, read the way `protocol.ts`
+ * reads it: off a recorded frame rather than off the model name. A universal
+ * reset says nothing about who built the unit, so it is skipped.
+ * @param {any} device contents of device.json
+ */
+function frameMaker(device) {
+  for (const reset of device.resets ?? []) {
+    if (!reset.message) continue;
+    const bytes = reset.message.trim().split(/\s+/);
+    if (bytes.length > 1 && bytes[1] !== '7E' && bytes[1] !== '7F') return bytes[1];
+  }
+  const identity = device.identityReply?.trim().split(/\s+/);
+  return identity?.length > 5 ? identity[5] : null;
+}
 
 if (units.length === 0) problems.push('units.json holds no units — run yarn sync');
 
@@ -102,6 +120,12 @@ for (const unit of units) {
     readJson(join(unitDir, 'behaviours.json')).behaviours.map((behaviour) => behaviour.id),
   );
   const device = readJson(join(unitDir, 'device.json'));
+  const maker = frameMaker(device);
+  if (maker === null) {
+    problems.push(`${unit.id}: no recorded frame says who built this unit`);
+  } else {
+    makers.set(maker, [...(makers.get(maker) ?? []), unit.id]);
+  }
   for (const id of Object.keys(device.quirks ?? {})) {
     if (!behaviourIds.has(id)) {
       problems.push(
@@ -109,6 +133,20 @@ for (const unit of units) {
       );
     }
   }
+  // Every address of a unit is as wide as the archive wrote it, and the
+  // emulator counts that width rather than assuming one. Regions that disagree
+  // would make it refuse the whole unit, so the disagreement is caught here
+  // where it can name the region that caused it.
+  const widths = new Map();
+  for (const region of index.regions) {
+    const width = region.start.trim().split(/\s+/).length;
+    if (!widths.has(width)) widths.set(width, region.start);
+  }
+  if (widths.size > 1) {
+    const shown = [...widths.entries()].map(([width, start]) => `${start} is ${width}`).join(', ');
+    problems.push(`${unit.id}: regions disagree on how many bytes an address has — ${shown}`);
+  }
+
   for (const [start, runs] of Object.entries(device.initial)) {
     const region = index.regions.find((candidate) => candidate.start === start);
     if (!region) {
@@ -146,3 +184,13 @@ console.info(
   `data: ${units.length} unit(s), ${blocksChecked} blocks, ` +
     `${addressesChecked.toLocaleString()} addresses, every code in the legend`,
 );
+
+// Not a verdict on whether the emulator can read them — `protocol.ts` decides
+// that, and a unit it cannot read is answered through its recorded messages
+// alone. Printing the makers is how a family arriving for the first time
+// becomes visible here rather than as a quiet `unmeasured` on the page.
+const byMaker = [...makers.entries()]
+  .map(([maker, ids]) => `${maker} (${ids.length})`)
+  .sort()
+  .join(', ');
+console.info(`frames: manufacturer ${byMaker}`);

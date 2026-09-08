@@ -7,8 +7,15 @@ import ja from '../src/locales/ja.json' with { type: 'json' };
 const siteUrl = 'https://soundings.libraz.net';
 const githubUrl = 'https://github.com/libraz/soundings';
 
-/** The unit a locale's nav points at when nothing else is in the URL. */
-const primaryUnit = units.units[0]?.id ?? '';
+/**
+ * The unit the nav can point straight at, or null once there is a choice.
+ *
+ * Every page below `/units/` belongs to one unit, so a nav entry for one is
+ * only meaningful while there is a single unit to mean. With a second in the
+ * archive the same entries would send someone reading the MU2000 to the
+ * SC-8850's map, so they give way to the index, where a unit gets picked first.
+ */
+const soleUnit = units.units.length === 1 ? units.units[0].id : null;
 
 /**
  * @param prefix `''` for English at the root, `/ja` for the Japanese tree
@@ -19,10 +26,14 @@ function themeConfig(prefix: string, strings: typeof en) {
   return {
     nav: [
       { text: strings.nav.units, link: path('/units/'), activeMatch: '/units/' },
-      { text: strings.nav.map, link: path(`/units/${primaryUnit}/map`) },
-      { text: strings.nav.tones, link: path(`/units/${primaryUnit}/tones`) },
-      { text: strings.nav.effects, link: path(`/units/${primaryUnit}/effects`) },
-      { text: strings.nav.emulator, link: path(`/units/${primaryUnit}/emulator`) },
+      ...(soleUnit
+        ? [
+            { text: strings.nav.map, link: path(`/units/${soleUnit}/map`) },
+            { text: strings.nav.tones, link: path(`/units/${soleUnit}/tones`) },
+            { text: strings.nav.effects, link: path(`/units/${soleUnit}/effects`) },
+            { text: strings.nav.emulator, link: path(`/units/${soleUnit}/emulator`) },
+          ]
+        : []),
       { text: strings.nav.docs, link: path('/docs/'), activeMatch: '/docs/' },
     ],
     sidebar: {
