@@ -20,6 +20,7 @@ import { aggregateUnit } from './lib/aggregate.mjs';
 import { Archive } from './lib/archive.mjs';
 import { buildEffects, buildTones } from './lib/catalog.mjs';
 import { buildDevice } from './lib/device.mjs';
+import { cite, claimsFor, Documents } from './lib/documents.mjs';
 import { Emitter } from './lib/emit.mjs';
 import { classifyVocabulary } from './lib/vocab.mjs';
 
@@ -51,6 +52,7 @@ function main() {
   const legend = readOwnJson('legend.json');
   const quirks = readOwnJson('quirks.json');
   const archive = new Archive(sourceRoot);
+  const documents = new Documents(sourceRoot);
   const emit = new Emitter({ check });
 
   /** @type {any[]} */
@@ -90,6 +92,35 @@ function main() {
         unitId,
         block: key.replace('-', ' '),
         addresses: records,
+      });
+    }
+
+    // What a published document states about these addresses, beside what was
+    // measured of them. Sharded like the blocks so a page loads one file, and
+    // written only for the blocks a document actually reaches: a block with no
+    // claim file is a block no document this unit names says anything about,
+    // which is not the same as one they agree with.
+    const claims = collectClaims({
+      documents,
+      aggregated,
+      blocks: [...shards.keys()].map((key) => key.replace('-', ' ')),
+      unitId,
+      warnings,
+    });
+    for (const [key, held] of claims.byBlock) {
+      emit.json(join(unitDir, 'claims', `${key}.json`), {
+        unitId,
+        block: key.replace('-', ' '),
+        documents: claims.cited,
+        ...held,
+      });
+    }
+    if (claims.cited.length > 0) {
+      emit.json(join(unitDir, 'claims.json'), {
+        unitId,
+        documents: claims.cited,
+        blocks: [...claims.byBlock.keys()].sort(),
+        counts: claims.counts,
       });
     }
 
@@ -144,6 +175,61 @@ function main() {
   emit.prune(publicDataDir);
 
   report(emit, units, warnings);
+}
+
+/**
+ * Every document this unit's `meta.json` names, joined onto its addresses.
+ *
+ * A unit naming a document the tree does not hold is a warning rather than a
+ * failure: the documents are read a page at a time by hand, and a unit can name
+ * one before anybody has started on it. What must not happen is the naming being
+ * ignored, which would leave the site quietly showing no claims for a unit whose
+ * record says there are some.
+ *
+ * @param {{documents: Documents, aggregated: any, blocks: string[], unitId: string, warnings: string[]}} args
+ */
+function collectClaims({ documents, aggregated, blocks, unitId, warnings }) {
+  /** @type {Map<string, {claims: any[], absent: any[]}>} */
+  const byBlock = new Map();
+  /** @type {any[]} */
+  const cited = [];
+  /** @type {Record<string, number>} */
+  const counts = {};
+
+  for (const id of aggregated.meta.documents ?? []) {
+    if (!documents.has(id)) {
+      warnings.push(`${unitId}: meta.json names document ${id}, which is not under documents/`);
+      continue;
+    }
+    const document = documents.load(id);
+    cited.push(cite(document));
+    const { claims, absent } = claimsFor({
+      document,
+      addresses: aggregated.addresses,
+      resets: aggregated.resets,
+      blocks,
+    });
+    const into = (key) => {
+      if (!byBlock.has(key)) byBlock.set(key, { claims: [], absent: [] });
+      return byBlock.get(key);
+    };
+    for (const claim of claims) {
+      into(blockKey(claim.a)).claims.push({ ...claim, d: id });
+      for (const facet of [claim.range, claim.initial]) {
+        counts[facet] = (counts[facet] ?? 0) + 1;
+      }
+    }
+    for (const row of absent) {
+      into(blockKey(row.a)).absent.push({ ...row, d: id });
+      counts['stated, not measured'] = (counts['stated, not measured'] ?? 0) + 1;
+    }
+  }
+
+  for (const held of byBlock.values()) {
+    held.claims.sort((a, b) => a.a.localeCompare(b.a));
+    held.absent.sort((a, b) => a.a.localeCompare(b.a));
+  }
+  return { byBlock, cited, counts };
 }
 
 /**
