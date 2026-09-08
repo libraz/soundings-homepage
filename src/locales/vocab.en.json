@@ -1,0 +1,108 @@
+{
+  "note": "Each verdict has a short form for chips and tables, and the archive's own full wording for the body of a card. The short form is a label; the full form is what was actually written down, and is what the site quotes when there is room for it. Stimulus names (struck, struck_vibrato, …) are identifiers and are not translated in any locale — the archive's own description of what each one sees is shown beside them instead.",
+  "verdicts": {
+    "accepts": {
+      "short": "accepts",
+      "full": "accepts"
+    },
+    "clamps": {
+      "short": "clamps",
+      "full": "clamps"
+    },
+    "refuses out of range": {
+      "short": "refuses",
+      "full": "refuses out of range"
+    },
+    "unchanging, so a clamp and a refusal cannot be told apart": {
+      "short": "unchanging",
+      "full": "unchanging, so a clamp and a refusal cannot be told apart"
+    },
+    "at least the ceiling": {
+      "short": "to the ceiling",
+      "full": "at least the ceiling"
+    },
+    "truncates": {
+      "short": "truncates",
+      "full": "truncates"
+    },
+    "refuses": {
+      "short": "refuses",
+      "full": "refuses"
+    },
+    "every address answered differently from its neighbours": {
+      "short": "all distinct",
+      "full": "every address answered differently from its neighbours"
+    },
+    "some neighbouring addresses could not be told apart": {
+      "short": "some alike",
+      "full": "some neighbouring addresses could not be told apart"
+    },
+    "only one address here would answer, so there was nothing to compare it with": {
+      "short": "nothing to compare",
+      "full": "only one address here would answer, so there was nothing to compare it with"
+    },
+    "audible": {
+      "short": "heard",
+      "full": "audible"
+    },
+    "not audible under what was tried": {
+      "short": "not heard",
+      "full": "not audible under what was tried"
+    },
+    "not audible under the note asked": {
+      "short": "not heard",
+      "full": "not audible under the note asked"
+    },
+    "could not be measured": {
+      "short": "unmeasured",
+      "full": "could not be measured"
+    },
+    "started something that does not repeat": {
+      "short": "unrepeatable",
+      "full": "started something that does not repeat"
+    },
+    "no yardstick under the note asked, so not asked": {
+      "short": "no yardstick",
+      "full": "no yardstick under the note asked, so not asked"
+    },
+    "static": {
+      "short": "stands still",
+      "full": "static"
+    },
+    "moves": {
+      "short": "moves",
+      "full": "moves"
+    },
+    "could not say": {
+      "short": "could not say",
+      "full": "could not say"
+    }
+  },
+  "resetOutcome": {
+    "R": {
+      "short": "restored",
+      "full": "restored to the power-on value"
+    },
+    "M": {
+      "short": "kept",
+      "full": "left holding the mark"
+    },
+    "N": {
+      "short": "neither",
+      "full": "changed to neither"
+    },
+    "D": {
+      "short": "differs",
+      "full": "differs from power-on afterwards"
+    },
+    "-": {
+      "short": "not asked",
+      "full": "not marked, so this reset was not asked about it"
+    }
+  },
+  "qualifiers": {
+    "balance": "read as a balance between the two channels"
+  },
+  "under": "{stimulus}, with {setting}",
+  "notes": {}
+}

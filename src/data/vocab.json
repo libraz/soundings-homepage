@@ -1,0 +1,44 @@
+{
+  "note": "Every wording the archive used that the site has to show, sorted into the buckets the locale files are organised by. yarn check:vocab fails when one of these has no translation in src/locales/vocab.*.json.",
+  "verdicts": [
+    "accepts",
+    "at least the ceiling",
+    "audible",
+    "clamps",
+    "could not be measured",
+    "could not say",
+    "every address answered differently from its neighbours",
+    "moves",
+    "no yardstick under the note asked, so not asked",
+    "not audible under the note asked",
+    "not audible under what was tried",
+    "only one address here would answer, so there was nothing to compare it with",
+    "refuses",
+    "refuses out of range",
+    "some neighbouring addresses could not be told apart",
+    "started something that does not repeat",
+    "static",
+    "truncates",
+    "unchanging, so a clamp and a refusal cannot be told apart"
+  ],
+  "stimuli": [
+    "deep",
+    "struck",
+    "struck_again",
+    "struck_caught",
+    "struck_damped",
+    "struck_kit",
+    "struck_kit_36",
+    "struck_moved",
+    "struck_pair",
+    "struck_pedalled",
+    "struck_pressed",
+    "struck_retuned",
+    "struck_softened",
+    "struck_vibrato",
+    "unpitched"
+  ],
+  "qualifiers": [
+    "balance"
+  ]
+}

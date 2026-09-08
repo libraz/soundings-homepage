@@ -1,0 +1,10 @@
+# Branch and preview builds must never be indexed: they serve the same content
+# as production under a *.pages.dev host, and a crawler that finds one there
+# treats it as a duplicate of the real site.
+https://:project.pages.dev/*
+  X-Robots-Tag: noindex
+
+# The converted archive is content-addressed by nothing — it changes only when
+# yarn sync runs — so it is safe to cache for a day and revalidate.
+/data/*
+  Cache-Control: public, max-age=86400, must-revalidate

@@ -1,0 +1,397 @@
+import { addressOrdinal, bankKey, blockKey, expandRegion, isContiguous } from './address.mjs';
+
+/**
+ * Join every stage of one unit's archive into one record per address.
+ *
+ * The archive is written stage by stage — one directory per command — because
+ * that is how it was measured. A reader arrives with an address instead, so
+ * everything the archive knows about that address has to be gathered from a
+ * dozen files before it can be shown as one thing. That inversion is all this
+ * module does; it adds no interpretation, and an address a stage never reached
+ * carries an absence rather than a default.
+ */
+
+/** @param {Record<string,string>} table @returns {Map<string,string>} phrase -> code */
+function inverted(table) {
+  return new Map(Object.entries(table).map(([code, phrase]) => [phrase, code]));
+}
+
+export class UnknownWording extends Error {
+  /** @param {string} field @param {string} wording @param {string} source */
+  constructor(field, wording, source) {
+    super(
+      `${source}: ${field} says ${JSON.stringify(wording)}, which src/data/legend.json does not list.\n` +
+        'The archive has grown a wording the site does not know how to show. Add it to legend.json\n' +
+        'and to src/locales/vocab.*.json, then run yarn sync again.',
+    );
+    this.name = 'UnknownWording';
+  }
+}
+
+/**
+ * @param {import('./archive.mjs').UnitArchive} unit
+ * @param {any} legend
+ */
+export function aggregateUnit(unit, legend) {
+  const codes = {
+    writeClass: inverted(legend.writeClass),
+    holdVerdict: inverted(legend.holdVerdict),
+    audibleVerdict: inverted(legend.audibleVerdict),
+    oversizeBehaviour: inverted(legend.oversizeBehaviour),
+  };
+  /** @param {'writeClass'|'holdVerdict'|'audibleVerdict'|'oversizeBehaviour'} field */
+  const code = (field, wording, source) => {
+    const found = codes[field].get(wording);
+    if (found === undefined) throw new UnknownWording(field, wording, source);
+    return found;
+  };
+
+  const meta = unit.loadRequired('meta.json');
+  const vocab = new Set();
+  /** @type {string[]} */
+  const warnings = [];
+
+  // --- sweep: which addresses exist at all -------------------------------
+  const sweep = unit.load('sweep/whole-map.json');
+  /** @type {Map<string, any>} address -> record under construction */
+  const addresses = new Map();
+  /** @type {any[]} */
+  const regions = [];
+
+  if (sweep) {
+    for (const region of sweep.regions) {
+      const bytes = region.data ? region.data.split(/\s+/) : [];
+      const members = expandRegion(region.address, region.size);
+      const entry = {
+        start: region.address,
+        size: region.size,
+        block: blockKey(region.address),
+        bank: bankKey(region.address),
+        end: members[members.length - 1],
+        oversize: code('oversizeBehaviour', region.oversize_behaviour, 'sweep/whole-map.json'),
+        checksumOk: region.checksum_ok !== false,
+      };
+      regions.push(entry);
+      vocab.add(region.oversize_behaviour);
+      // Regions overlap: 00 01 00 covers 64 addresses and 00 01 30 covers 16 of
+      // the same ones, so the 854 sizes sum to 42,064 over 37,504 addresses.
+      // The first region to name an address owns it, matching how a read that
+      // starts on a region's own start address is bounded. Letting the last one
+      // win would move an address into a region a read never reaches it through,
+      // and would count it twice in every rollup.
+      members.forEach((address, offset) => {
+        if (addresses.has(address)) {
+          entry.overlaps = (entry.overlaps ?? 0) + 1;
+          return;
+        }
+        addresses.set(address, {
+          a: address,
+          g: region.address,
+          o: offset,
+          s: bytes[offset] ?? null,
+        });
+      });
+    }
+  }
+  const regionByStart = new Map(regions.map((region) => [region.start, region]));
+
+  // --- boundary: does a region stop where the map says it does? ----------
+  const boundary = unit.load('boundary/whole-map.json');
+  if (boundary) {
+    for (const region of boundary.regions) {
+      const target = regionByStart.get(region.address);
+      if (target) target.beyond = region.answered_beyond_the_mapped_end ?? 0;
+    }
+  }
+
+  // --- offsets: addresses only a single-byte read past a region reaches ---
+  for (const [, record] of unit.loadStage('offsets')) {
+    for (const block of record.blocks ?? []) {
+      for (const [address, value] of Object.entries(block.answered ?? {})) {
+        if (addresses.has(address)) continue;
+        addresses.set(address, { a: address, g: null, o: null, s: value, x: true });
+      }
+    }
+  }
+
+  // --- power-on: what each address holds before anything is sent ---------
+  const powerOn = unit.load('power-on/whole-map.json');
+  if (powerOn) {
+    for (const [address, value] of Object.entries(powerOn.values ?? {})) {
+      const record = addresses.get(address);
+      if (record) record.p = value;
+    }
+  }
+
+  // --- write-probe: what an address accepts ------------------------------
+  const writeProbe = unit.load('write-probe/whole-map.json');
+  if (writeProbe) {
+    for (const region of writeProbe.regions) {
+      const target = regionByStart.get(region.start);
+      if (target) {
+        target.restored = region.region_restored !== false;
+        if (region.skipped?.length) target.skipped = region.skipped.length;
+      }
+      for (const byte of region.bytes ?? []) {
+        const record = addresses.get(byte.address);
+        if (!record) continue;
+        vocab.add(byte.classification);
+        const write = {
+          c: code('writeClass', byte.classification, 'write-probe/whole-map.json'),
+          r: byte.range,
+          n: byte.accepted?.length ?? 0,
+          // The probe writes a ladder of values rather than all 128, so the
+          // accepted count only means anything beside the number it tried.
+          t: byte.wrote_read?.length ?? 0,
+        };
+        if (byte.accepted && !isContiguous(byte.accepted)) write.v = byte.accepted;
+        if (byte.restored === false) write.k = false;
+        record.w = write;
+      }
+    }
+  }
+
+  // --- window-probe: blocks that are not storage but a view of another ---
+  /** @type {any} */
+  let window = null;
+  for (const finding of writeProbe?.findings ?? powerOn?.findings ?? []) {
+    if (finding.kind !== 'blocks-that-are-a-window') continue;
+    window = {
+      blocks: finding.blocks,
+      onto: finding.onto,
+      selectedBy: finding.selected_by,
+      appliesTo: finding.applies_to,
+      measuredIn: finding.measured_in,
+      neverCandidates: finding.blocks_that_were_never_candidates?.blocks ?? [],
+    };
+  }
+  if (window) {
+    const windowed = new Set(window.blocks);
+    for (const region of regions) if (windowed.has(region.bank)) region.window = true;
+  }
+
+  // --- hold-probe: is a neighbour a different address? -------------------
+  const holdProbe = unit.load('hold-probe/whole-map.json');
+  if (holdProbe) {
+    for (const region of holdProbe.regions) {
+      const target = regionByStart.get(region.start);
+      if (!target) continue;
+      vocab.add(region.verdict);
+      target.hold = code('holdVerdict', region.verdict, 'hold-probe/whole-map.json');
+      target.alike = region.neighbouring_pairs_that_answered_alike ?? 0;
+    }
+  }
+
+  // --- reset-probe: what each reset puts back ----------------------------
+  const resetProbe = unit.load('reset-probe/whole-map.json');
+  /** @type {{name: string, message: string|null, note: string|null}[]} */
+  let resets = [];
+  if (resetProbe) {
+    resets = resetProbe.resets.map((reset) => ({
+      name: reset.reset,
+      message: reset.message ?? null,
+      note: reset.note ?? null,
+    }));
+    const outcomes = [
+      ['restored_to_the_power_on_value', 'R'],
+      ['left_holding_the_mark', 'M'],
+      ['changed_to_neither', 'N'],
+      ['differs_from_power_on_afterwards', 'D'],
+    ];
+    // Two of the four outcomes are lists of addresses and two are maps from an
+    // address to the pair it ended up differing by, so both shapes are read.
+    resetProbe.resets.forEach((reset, index) => {
+      for (const [field, mark] of outcomes) {
+        const value = reset[field];
+        if (!value) continue;
+        const entries = Array.isArray(value)
+          ? value.map((address) => [address, null])
+          : Object.entries(value);
+        for (const [address, pair] of entries) {
+          const record = addresses.get(address);
+          if (!record) continue;
+          if (!record.r) record.r = '-'.repeat(resets.length).split('');
+          record.r[index] = mark;
+          if (pair) {
+            record.rp ??= {};
+            record.rp[index] = pair;
+          }
+        }
+      }
+    });
+    for (const record of addresses.values()) if (record.r) record.r = record.r.join('');
+  }
+
+  // --- alias-scan: which MIDI message writes here ------------------------
+  for (const [name, record] of unit.loadStage('alias-scan')) {
+    const file = `alias-scan/${name}.json`;
+    for (const attribution of record.attributed ?? []) {
+      for (const address of attribution.stores_verbatim ?? []) {
+        const target = addresses.get(address);
+        if (!target) continue;
+        target.al ??= [];
+        target.al.push({
+          s: attribution.stimulus,
+          k: attribution.kind ?? record.kind ?? null,
+          c: record.channel ?? null,
+          f: file,
+        });
+      }
+    }
+  }
+
+  // --- block: did the address change what the unit sounded like? ---------
+  for (const [name, record] of unit.loadStage('block')) {
+    const file = `block/${name}.json`;
+    for (const entry of record.addresses ?? []) {
+      const target = addresses.get(entry.address);
+      if (!target) continue;
+      vocab.add(entry.verdict);
+      for (const stimulus of [
+        ...(entry.heard_by ?? []),
+        ...(entry.not_heard_by ?? []),
+        ...(entry.inconclusive_under ?? []),
+      ]) {
+        vocab.add(stimulus);
+      }
+      // An address can be asked in more than one block record — once plainly and
+      // once with the state moved — and the records say which supersedes which.
+      // Keeping only the last one read would silently pick by file name.
+      target.b ??= [];
+      target.b.push({
+        v: code('audibleVerdict', entry.verdict, file),
+        val: entry.values ?? null,
+        hb: entry.heard_by ?? [],
+        nb: entry.not_heard_by ?? [],
+        iu: entry.inconclusive_under ?? [],
+        sup: entry.superseded_by?.record ?? null,
+        how: entry.how_it_had_to_be_asked ?? null,
+        f: file,
+      });
+    }
+    for (const entry of record.coverage?.cannot_be_asked ?? []) {
+      const target = addresses.get(entry.address);
+      if (target) target.nb = entry.why;
+    }
+  }
+
+  // --- roll region-level audible counts up for the map list --------------
+  for (const region of regions) region.heard = { y: 0, n: 0, x: 0 };
+  for (const record of addresses.values()) {
+    if (!record.b || !record.g) continue;
+    const region = regionByStart.get(record.g);
+    if (!region) continue;
+    const standing = record.b.filter((entry) => !entry.sup);
+    const verdicts = (standing.length > 0 ? standing : record.b).map((entry) => entry.v);
+    if (verdicts.includes('Y')) region.heard.y += 1;
+    else if (verdicts.includes('N')) region.heard.n += 1;
+    else region.heard.x += 1;
+  }
+  for (const region of regions) {
+    if (region.heard.y === 0 && region.heard.n === 0 && region.heard.x === 0) delete region.heard;
+  }
+
+  regions.sort((a, b) => addressOrdinal(a.start) - addressOrdinal(b.start));
+
+  // --- contrast: what each named stimulus is, and what it cannot hear -----
+  /** @type {Map<string, any>} */
+  const stimuli = new Map();
+  for (const [, record] of unit.loadStage('contrast')) {
+    for (const stimulus of record.stimuli ?? []) {
+      if (stimuli.has(stimulus.name)) continue;
+      stimuli.set(stimulus.name, {
+        name: stimulus.name,
+        program: stimulus.program ?? null,
+        note: stimulus.note ?? null,
+        velocity: stimulus.velocity ?? null,
+        channel: stimulus.channel ?? null,
+        holdSeconds: stimulus.hold_s ?? null,
+        capturedSeconds: stimulus.captured_s ?? null,
+        sees: stimulus.sees ?? null,
+        blindTo: stimulus.blind_to ?? null,
+      });
+    }
+  }
+
+  // --- measurements.json: the behaviours the archive states in prose -----
+  const measurements = unit.load('measurements.json');
+  const behaviours = (measurements?.behaviours ?? []).map((behaviour) => ({
+    id: behaviour.id,
+    summary: behaviour.summary,
+    method: behaviour.method ?? null,
+    note: behaviour.note ?? null,
+    reproduced: behaviour.reproduced ?? null,
+    notEstablished: behaviour.not_established ?? [],
+  }));
+  const spotChecks = measurements?.spot_checks ?? [];
+
+  if (!sweep) warnings.push(`${unit.unitId}: no sweep record, so the address map is empty`);
+
+  return {
+    meta,
+    summary: buildSummary(unit, meta, sweep, regions, addresses, resets, window),
+    regions,
+    addresses,
+    resets,
+    window,
+    behaviours,
+    spotChecks,
+    stimuli: [...stimuli.values()].sort((a, b) => a.name.localeCompare(b.name)),
+    vocab,
+    warnings,
+  };
+}
+
+/**
+ * The verdicts that still stand for an address: the ones no later record
+ * supersedes, or every one of them when they all were superseded.
+ * @param {any} record @returns {string[]}
+ */
+function standingVerdicts(record) {
+  if (!record.b) return [];
+  const standing = record.b.filter((entry) => !entry.sup);
+  return (standing.length > 0 ? standing : record.b).map((entry) => entry.v);
+}
+
+function buildSummary(unit, meta, sweep, regions, addresses, resets, window) {
+  const measured = [...addresses.values()];
+  return {
+    id: unit.unitId,
+    manufacturer: meta.manufacturer,
+    model: meta.model,
+    identityReply: meta.identity_reply ?? null,
+    firmware: meta.identity_decoded?.note
+      ? null
+      : (meta.identity_decoded?.software_revision ?? null),
+    specificationsClaimed: meta.specifications_claimed ?? [],
+    specificationsMeasured: meta.specifications_measured ?? [],
+    firstPublished: meta.record?.not_recorded?.first_published ?? null,
+    measurementChain: meta.measurement_chain ?? null,
+    measurementHealth: meta.measurement_health ?? null,
+    stages: unit.stages(),
+    counts: {
+      regions: regions.length,
+      addresses: measured.length,
+      withPowerOn: measured.filter((record) => record.p !== undefined).length,
+      withWriteProbe: measured.filter((record) => record.w).length,
+      withAlias: measured.filter((record) => record.al).length,
+      audible: measured.filter((record) => standingVerdicts(record).includes('Y')).length,
+      notAudible: measured.filter((record) => {
+        const verdicts = standingVerdicts(record);
+        return verdicts.length > 0 && !verdicts.includes('Y');
+      }).length,
+      banks: new Set(regions.map((region) => region.bank)).size,
+      blocks: new Set(regions.map((region) => region.block)).size,
+    },
+    resets,
+    window,
+    sweep: sweep
+      ? {
+          complete: sweep.complete === true,
+          trustworthy: sweep.trustworthy === true,
+          probesSent: sweep.probes_sent ?? null,
+          elapsedSeconds: sweep.elapsed_s ?? null,
+        }
+      : null,
+  };
+}

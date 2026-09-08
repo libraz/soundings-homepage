@@ -1,0 +1,60 @@
+{
+  "note": "Hand-authored. The archive records each behaviour as prose plus the results that established it, which a reader can follow but a program cannot. This file is the machine-readable half: for the behaviours the emulator is able to act on, it restates the same thing as a rule, keyed by the archive's own behaviour id so the two can be read against each other. A behaviour with no entry here is still shown on the site — it is simply not simulated, and the emulator says so rather than guessing. Every address and number below is copied from the cited record; nothing is inferred.",
+  "rules": {
+    "rq1-large-size-hangs-the-unit": {
+      "kind": "silence-on-oversized-read",
+      "minSize": 256,
+      "narrowedTo": [200, 256],
+      "recovery": "power-cycle"
+    },
+    "rq1-0c0000-is-a-command-not-a-read": {
+      "kind": "not-a-read",
+      "address": "0C 00 00",
+      "messages": 286,
+      "seconds": 29.3,
+      "spacingMs": 102
+    },
+    "single-byte-reads-do-not-reach-every-byte-of-a-readable-block": {
+      "kind": "unreachable-singly",
+      "addresses": [
+        "40 01 41",
+        "40 01 42",
+        "40 01 43",
+        "40 01 44",
+        "40 01 45",
+        "40 01 46",
+        "40 01 47"
+      ],
+      "reachedBy": "a read that starts earlier in the same region"
+    },
+    "asking-a-blocks-offsets-one-by-one-stopped-the-unit-answering-anything": {
+      "kind": "silence-on-offset-sweep",
+      "block": "40 40",
+      "afterSingleByteReads": 128,
+      "recovery": "power-cycle"
+    },
+    "rpn-modulation-depth-range-is-stored-scaled-and-clamped-not-verbatim": {
+      "kind": "scaled-alias",
+      "stimulus": "RPN 00 05",
+      "channel": 1,
+      "address": "40 21 04",
+      "scale": [127, 6],
+      "saturatesAt": 127
+    },
+    "bank-select-is-a-latch-that-a-program-change-commits-or-discards-whole": {
+      "kind": "bank-latch",
+      "channel": 1,
+      "msbController": 0,
+      "lsbController": 32,
+      "committedBy": "program change",
+      "stores": {
+        "bank": "40 11 00",
+        "program": "40 11 01",
+        "map": "40 41 00"
+      },
+      "acceptedBankMsb": [0, 8],
+      "acceptedMap": [0, 1, 2, 3, 4],
+      "discardedNote": "A triple the unit does not have is discarded whole, and the latch itself is in no readable address — so a bank left latched switches off every later program change with nothing to read that says so."
+    }
+  }
+}

@@ -1,0 +1,183 @@
+/* =========================================
+   Application pages
+
+   Two kinds of page share this site. Prose pages — the protocol, the glossary,
+   how to read the archive — are a reading surface, and `docs.css` styles them.
+   The rest are instruments: a lookup, a map, two catalogues, a console. They
+   are markdown only in the sense that a four-line file mounts them, and the
+   reading surface's conventions get in their way rather than helping.
+
+   Every such page carries `pageClass: page-app` (the front page carries
+   `page-landing`), and everything below is scoped to those. Nothing here
+   changes a docs page.
+
+   ---
+
+   One rule governs this file, and breaking it has cost twice already:
+
+   **A rule that undoes a docs default must not outrank a component.**
+
+   `docs.css` reaches components through `.vp-doc p`, `.vp-doc li + li` and the
+   like — one class, one or two elements. A component's own rule is a single
+   scoped class, which is *fewer* selectors than that. So the obvious
+   `.page-app .vp-doc p { … }` sits above both, and cancelling a docs default
+   with it also cancels whatever the component asked for: it flattened every
+   field label to reading size once, and stripped the margin off a readout row
+   the next time, dropping the row onto the hairline above it.
+
+   The undo rules below therefore wrap `.page-app` in `:where()`, which
+   contributes nothing to specificity. Each lands exactly level with the
+   `docs.css` rule it answers and wins on order alone — while any component
+   class still beats it. Rules that are this file's own design decision, rather
+   than an undo, keep their weight and are marked as such.
+   ========================================= */
+
+/* --- Reading measure ----------------------------------------------------
+   Two measures, because two different things are being read.
+
+   `--sg-measure` is for sustained prose: a behaviour the archive states in a
+   paragraph, a method, a list of what a run did not establish. Those are read
+   line after line, and a line the eye has to track back across loses its place.
+
+   `--sg-measure-wide` is for the one or two sentences that introduce a page.
+   Those are read once. Setting them to a paragraph measure under a full-width
+   heading, with a full-width panel beneath, leaves half the page empty beside
+   three lines of text — which reads as a layout that broke rather than as a
+   column that was chosen, and the reader is right to think so.
+
+   Both are set per script rather than per page. `ch` is the width of a zero, so
+   a measure written in it is a Latin measure: at 68ch a Japanese paragraph
+   wraps at 37 fullwidth characters, barely half of what the same rule gives
+   English. A fullwidth character is 1em, so Japanese is set in em. */
+:root {
+  --sg-measure: 70ch;
+  --sg-measure-wide: 96ch;
+}
+
+html[lang^='ja'] {
+  --sg-measure: 46em;
+  --sg-measure-wide: 62em;
+}
+
+/* --- Links --------------------------------------------------------------
+   `docs.css` underlines a link with a dotted gradient, which is right in a
+   paragraph and wrong on a table of 128 addresses, on a segmented selector,
+   and on a row of measurement citations — there it draws a broken rule under
+   every control on the page. Application pages opt out wholesale and their
+   components style their own links. */
+:where(.page-app, .page-landing) .vp-doc a {
+  background-image: none;
+}
+
+/* --- Headings -----------------------------------------------------------
+   The section mark before an h1 is a docs affordance: it says "this is a
+   chapter". An application page's h1 names what the panel below it is, so the
+   mark reads as an ornament that arrived from somewhere else. */
+:where(.page-app, .page-landing) .vp-doc h1::before,
+:where(.page-app) .vp-doc h2::before {
+  content: none;
+}
+
+/* An h2 inside a component is a section of a panel, not a chapter division,
+   so it keeps neither the rule above it nor the space that rule needs. */
+:where(.page-app) .vp-doc h2 {
+  margin-top: var(--space-6);
+  padding-top: 0;
+  border-top: none;
+}
+
+/* --- Prose spacing ------------------------------------------------------
+   `docs.css` sets the rhythm of a page of prose: paragraphs get a margin, and
+   list items get one between them. The second is actively broken here — a row
+   of readouts marked up as a list has `li + li { margin-top: 0.35rem }` applied
+   to every item but the first, so the first sits a few pixels above the other
+   four and the whole row loses its baseline.
+
+   Only the spacing is undone, never the type. */
+:where(.page-app) .vp-doc ul,
+:where(.page-app) .vp-doc ol,
+:where(.page-app) .vp-doc dl {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+:where(.page-app) .vp-doc li,
+:where(.page-app) .vp-doc dd,
+:where(.page-app) .vp-doc dt,
+:where(.page-app) .vp-doc p {
+  margin: 0;
+}
+
+/* Level with `docs.css`'s own `.vp-doc li + li`, and no heavier. */
+:where(.page-app) .vp-doc li + li {
+  margin-top: 0;
+}
+
+/* --- Tables -------------------------------------------------------------
+   `docs.css` makes a table a `display: block` scroll box, which is right for a
+   three-column table dropped into prose and wrong here. A block box sizes its
+   own width, but the anonymous table inside it still shrinks to its content, so
+   a full-width table lays its rows out across half the panel and leaves the
+   header rule hanging in mid-air. Application tables are real tables again, and
+   each component wraps its own in a scroller where it needs one. */
+:where(.page-app) .vp-doc table {
+  display: table;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  overflow: visible;
+  margin: 0;
+  font-family: inherit;
+}
+
+/* The reading surface's cell rules are for a table of prose. Components draw
+   their own hairlines, at their own density. */
+:where(.page-app) .vp-doc td,
+:where(.page-app) .vp-doc th {
+  border: 0;
+}
+
+/* =========================================================================
+   From here down these are this file's own decisions, not undos, and they
+   carry the weight to hold against the default theme.
+   ========================================================================= */
+
+/* The page heading a route supplies is the one piece of real prose on an
+   application page. It sets the panel below it, so it is a heading rather than
+   a title: smaller than a chapter opening and closer to what it introduces. */
+.page-app .vp-doc h1 {
+  font-size: clamp(1.5rem, 3vw, 1.9rem);
+  font-weight: 500;
+  margin: var(--space-8) 0 var(--space-4);
+}
+
+/* A block of 128 addresses is seven columns wide and does not fit a reading
+   measure. Application pages take the window, up to the point where a table
+   stops being scannable in one movement of the eye. */
+.page-app .VPDoc:not(.has-sidebar) .container,
+.page-app .VPDoc:not(.has-sidebar) .content {
+  max-width: 1180px;
+}
+
+@media (min-width: 1440px) {
+  .page-app .VPDoc:not(.has-sidebar) .container,
+  .page-app .VPDoc:not(.has-sidebar) .content {
+    max-width: 1280px;
+  }
+}
+
+/* The first thing on an application page is a panel, not a heading, so the
+   reading surface's top padding leaves it stranded below the nav. */
+.page-app .VPDoc {
+  padding-top: var(--space-8);
+}
+
+/* --- Landing ------------------------------------------------------------
+   The front page is a full-bleed layout of its own; the doc container only
+   needs to get out of its way. */
+.page-landing .VPPage,
+.page-landing .VPContent,
+.page-landing .vp-doc {
+  padding: 0;
+}

@@ -1,0 +1,111 @@
+{
+  "note": "判定語は、表やチップに出す短い形と、カード本文に出すアーカイブ自身の言い回しの全訳を持ちます。刺激名（struck、struck_vibrato など）は識別子なので、どのロケールでも翻訳しません。代わりに、その刺激で何が見えるかというアーカイブ自身の記述を添えます。",
+  "verdicts": {
+    "accepts": {
+      "short": "受理",
+      "full": "値をそのまま受け付ける"
+    },
+    "clamps": {
+      "short": "丸め",
+      "full": "範囲外の値を範囲の端に丸める"
+    },
+    "refuses out of range": {
+      "short": "範囲外は拒否",
+      "full": "範囲外の値は受け付けない"
+    },
+    "unchanging, so a clamp and a refusal cannot be told apart": {
+      "short": "不変",
+      "full": "値が動かないため、丸めと拒否を区別できない"
+    },
+    "at least the ceiling": {
+      "short": "上限まで返す",
+      "full": "少なくとも上限までは返す"
+    },
+    "truncates": {
+      "short": "打ち切り",
+      "full": "領域の終わりで応答を打ち切る"
+    },
+    "refuses": {
+      "short": "応答なし",
+      "full": "まったく応答しない"
+    },
+    "every address answered differently from its neighbours": {
+      "short": "全て区別可能",
+      "full": "すべてのアドレスが隣接アドレスと異なる値を返した"
+    },
+    "some neighbouring addresses could not be told apart": {
+      "short": "一部区別不可",
+      "full": "隣接アドレスのうち、区別できないものがあった"
+    },
+    "only one address here would answer, so there was nothing to compare it with": {
+      "short": "比較対象なし",
+      "full": "応答したアドレスがここでは 1 つだけで、比較する相手がなかった"
+    },
+    "audible": {
+      "short": "可聴",
+      "full": "音の変化として聞き取れた"
+    },
+    "not audible under what was tried": {
+      "short": "不可聴",
+      "full": "試した範囲では聞き取れなかった"
+    },
+    "not audible under the note asked": {
+      "short": "不可聴",
+      "full": "用いた音では聞き取れなかった"
+    },
+    "could not be measured": {
+      "short": "測定不能",
+      "full": "測定できなかった"
+    },
+    "started something that does not repeat": {
+      "short": "非再現の変化",
+      "full": "再現しない何かを始めた"
+    },
+    "no yardstick under the note asked, so not asked": {
+      "short": "基準なし",
+      "full": "用いた音では基準が取れなかったため、問わなかった"
+    },
+    "static": {
+      "short": "静止",
+      "full": "それ自体は時間とともに動かない"
+    },
+    "moves": {
+      "short": "動く",
+      "full": "それ自体が時間とともに動く"
+    },
+    "could not say": {
+      "short": "判定不能",
+      "full": "どちらとも言えなかった"
+    }
+  },
+  "resetOutcome": {
+    "R": {
+      "short": "復元",
+      "full": "電源投入直後の値に戻った"
+    },
+    "M": {
+      "short": "保持",
+      "full": "書き込んだ印をそのまま保持した"
+    },
+    "N": {
+      "short": "どちらでもない",
+      "full": "印でも電源投入時の値でもない値に変わった"
+    },
+    "D": {
+      "short": "差異あり",
+      "full": "リセット後、電源投入直後の値と異なる"
+    },
+    "-": {
+      "short": "未実施",
+      "full": "印を書けなかったため、このリセットについては問われていない"
+    }
+  },
+  "qualifiers": {
+    "balance": "2 チャンネル間のレベル差として読んだ場合"
+  },
+  "under": "{stimulus}（{setting} のもとで）",
+  "notes": {
+    "Every bank was asked for all 128 programs, so a bank absent here answered none of them.": "どのバンクも 128 プログラムすべてを問いました。したがって、ここに無いバンクは 1 つも応答しなかったバンクです。",
+    "Every type number was asked.": "すべてのタイプ番号を問いました。"
+  }
+}

@@ -1,0 +1,29 @@
+# Dependencies
+node_modules
+
+# Yarn
+.yarn/cache/*
+.yarn/unplugged/*
+.yarn/releases/*
+.yarn/build-state.yml
+.yarn/install-state.gz
+!.yarn/cache
+
+# Build
+.vitepress/cache
+.vitepress/cache.stale-*
+.vitepress/dist
+
+# Environment
+*.local
+
+# AI
+.claude
+.serena/
+*.claude.md
+CLAUDE.md
+AGENT.md
+AGENTS.md
+
+# Backup
+backup/

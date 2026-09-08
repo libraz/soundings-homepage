@@ -1,0 +1,52 @@
+{
+  "note": "Hand-authored, not generated. Both scripts/sync.mjs and the site read this file, so a code can never mean two things. Each entry maps the single-character code used in the emitted records to the archive's own wording for it. `yarn sync` fails when it meets a wording that is not here, which is how a new verdict in the archive is caught rather than silently dropped.",
+  "writeClass": {
+    "A": "accepts",
+    "C": "clamps",
+    "F": "refuses out of range",
+    "U": "unchanging, so a clamp and a refusal cannot be told apart"
+  },
+  "holdVerdict": {
+    "D": "every address answered differently from its neighbours",
+    "I": "some neighbouring addresses could not be told apart",
+    "A": "only one address here would answer, so there was nothing to compare it with"
+  },
+  "audibleVerdict": {
+    "Y": "audible",
+    "N": "not audible under what was tried",
+    "X": "could not be measured"
+  },
+  "resetOutcome": {
+    "R": "restored to the power-on value",
+    "M": "left holding the mark",
+    "N": "changed to neither",
+    "D": "differs from power-on afterwards",
+    "-": "not marked, so this reset was not asked about it"
+  },
+  "efxParamVerdict": {
+    "Y": "audible",
+    "N": "not audible under the note asked",
+    "M": "started something that does not repeat",
+    "X": "no yardstick under the note asked, so not asked"
+  },
+  "efxSortVerdict": {
+    "S": "static",
+    "M": "moves",
+    "X": "could not say"
+  },
+  "oversizeBehaviour": {
+    "C": "at least the ceiling",
+    "T": "truncates",
+    "F": "refuses"
+  },
+  "aliasKind": {
+    "cc": "cc",
+    "channel": "channel",
+    "nrpn": "nrpn",
+    "drum-nrpn": "drum-nrpn",
+    "rpn": "rpn",
+    "mode": "mode",
+    "address": "address",
+    "universal": "universal"
+  }
+}
