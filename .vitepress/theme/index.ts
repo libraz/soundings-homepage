@@ -6,6 +6,7 @@ import AddressCard from '../../src/components/AddressCard.vue';
 import AddressSearch from '../../src/components/AddressSearch.vue';
 import BehaviourList from '../../src/components/BehaviourList.vue';
 import BlockTable from '../../src/components/BlockTable.vue';
+import DocumentClaims from '../../src/components/DocumentClaims.vue';
 import EffectCatalog from '../../src/components/EffectCatalog.vue';
 import EmulatorConsole from '../../src/components/EmulatorConsole.vue';
 import LandingPage from '../../src/components/LandingPage.vue';
@@ -30,6 +31,7 @@ export default {
     app.component('AddressSearch', AddressSearch);
     app.component('BehaviourList', BehaviourList);
     app.component('BlockTable', BlockTable);
+    app.component('DocumentClaims', DocumentClaims);
     app.component('EffectCatalog', EffectCatalog);
     app.component('EmulatorConsole', EmulatorConsole);
     app.component('LandingPage', LandingPage);

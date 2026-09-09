@@ -14,7 +14,7 @@ import { useI18n } from '../composables/useI18n';
  */
 const props = defineProps<{
   unitId: string;
-  /** `unit`, `map`, `tones`, `effects`, `emulator` or `observations`. */
+  /** `unit`, `map`, `tones`, `effects`, `emulator`, `observations` or `documents`. */
   active?: string;
 }>();
 
@@ -41,6 +41,7 @@ const sections = computed(() => [
   { key: 'effects', label: t('nav.effects'), path: '/effects' },
   { key: 'emulator', label: t('nav.emulator'), path: '/emulator' },
   { key: 'observations', label: t('nav.observations'), path: '/observations' },
+  { key: 'documents', label: t('nav.documents'), path: '/documents' },
 ]);
 
 const current = computed(() => props.active ?? 'unit');
@@ -95,9 +96,9 @@ const current = computed(() => props.active ?? 'unit');
       </li>
     </ul>
 
-    <!-- Six equal segments: a Japanese label is a different length from its
-         English one, and a selector that resizes under the reader is harder to
-         aim at than one whose segments never move. -->
+    <!-- Equal segments: a Japanese label is a different length from its English
+         one, and a selector that resizes under the reader is harder to aim at
+         than one whose segments never move. -->
     <nav class="nav sg-sunk">
       <a
         v-for="section in sections"

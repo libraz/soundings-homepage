@@ -23,7 +23,14 @@ type Locale = 'en' | 'ja';
 const STRINGS: Record<Locale, typeof en> = { en, ja: ja as typeof en };
 
 /** The pages that exist once per unit, and the heading each carries. */
-export type UnitPage = 'unit' | 'map' | 'tones' | 'effects' | 'emulator' | 'observations';
+export type UnitPage =
+  | 'unit'
+  | 'map'
+  | 'tones'
+  | 'effects'
+  | 'emulator'
+  | 'observations'
+  | 'documents';
 
 function heading(locale: Locale, page: UnitPage, model: string): string {
   const strings = STRINGS[locale];
@@ -40,6 +47,8 @@ function heading(locale: Locale, page: UnitPage, model: string): string {
       return strings.emulator.title;
     case 'observations':
       return strings.unit.observations;
+    case 'documents':
+      return strings.claims.title;
   }
 }
 
