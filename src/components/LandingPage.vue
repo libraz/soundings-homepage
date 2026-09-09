@@ -56,8 +56,12 @@ const entries = computed(() => [
 <template>
   <div class="landing">
     <section class="hero">
+      <!-- No eyebrow above the wordmark. The nav carries the site's name and its
+           tagline on every page including this one, and repeating the tagline
+           word for word two lines below it read as a page that had been
+           assembled rather than written. What the hero says is the one thing
+           the nav has no room for. -->
       <div class="hero__inner">
-        <p class="hero__eyebrow sg-label">{{ t('site.tagline') }}</p>
         <h1 class="hero__title">soundings</h1>
         <p class="hero__lede">{{ t('site.lede') }}</p>
 
@@ -146,10 +150,6 @@ const entries = computed(() => [
 
 .hero__inner {
   position: relative;
-}
-
-.hero__eyebrow {
-  margin: 0 0 var(--space-4);
 }
 
 .hero__title {
@@ -257,11 +257,15 @@ const entries = computed(() => [
   border-top: 1px solid var(--sg-rule);
 }
 
+/* The identifier belongs to the model, so it sits against it rather than in a
+   column of its own: given a third of the row it drifted into the middle of an
+   empty band with the name at one end and the counts at the other, and the row
+   read as three unrelated things instead of one unit. */
 .units__list a {
   display: grid;
-  grid-template-columns: minmax(10rem, 1fr) minmax(0, 12rem) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: baseline;
-  gap: var(--space-4);
+  gap: var(--space-3) var(--space-4);
   padding: var(--space-4) var(--space-2);
   border-bottom: 1px solid var(--sg-rule-soft);
   color: inherit;
@@ -271,6 +275,12 @@ const entries = computed(() => [
 
 .units__list a:hover {
   background: color-mix(in srgb, var(--vp-c-brand-1) 6%, transparent);
+}
+
+/* The list needs no rule to close it: the section below opens with one, and
+   two hairlines a few pixels apart read as a border drawn twice. */
+.units__list li:last-child a {
+  border-bottom: none;
 }
 
 .units__model {
@@ -283,15 +293,19 @@ const entries = computed(() => [
   color: var(--color-text-tertiary);
 }
 
+/* The rule runs the width of the page and the text does not. A rule cut to the
+   measure of the paragraph under it stops two thirds of the way across, level
+   with nothing, and reads as a border that failed rather than as the end of the
+   page — which is what it did here. */
 .caveat {
   margin-top: var(--space-10);
   padding-top: var(--space-5);
   border-top: 1px solid var(--sg-rule-soft);
-  max-width: 44rem;
 }
 
 .caveat p {
   margin: 0 0 var(--space-3);
+  max-width: 44rem;
   font-size: 0.82rem;
   line-height: 1.8;
   color: var(--color-text-tertiary);

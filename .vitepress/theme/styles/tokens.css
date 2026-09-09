@@ -81,6 +81,9 @@ body {
      only things that genuinely float (menus, the search popover) cast one. */
   --shadow-raised: 0 1px 2px rgba(16, 21, 25, 0.06);
   --shadow-float: 0 12px 32px -12px rgba(16, 21, 25, 0.28);
+  /* The mark a scrolling box makes at the edge it has more content past. Not
+     one of the four hues: it says there is something over there, not what. */
+  --sg-edge-shadow: rgba(16, 21, 25, 0.2);
 
   /* --- Motion --- */
   --transition-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -138,6 +141,7 @@ body {
 
   --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-float: 0 14px 40px -14px rgba(0, 0, 0, 0.72);
+  --sg-edge-shadow: rgba(0, 0, 0, 0.85);
 
   --color-text-primary: #e7eef2;
   --color-text-secondary: rgba(231, 238, 242, 0.7);
@@ -171,31 +175,52 @@ body {
 
 /* --- Shared panel primitives ------------------------------------------
    Used by every bespoke component on the site so a card, a table shell and
-   the search popover are visibly the same object at different sizes. */
-.sg-panel {
+   the search popover are visibly the same object at different sizes.
+
+   Every primitive below is declared twice: once bare, and once under
+   `.vp-doc`. That is not belt and braces. `docs.css` reaches the reading
+   surface through `.vp-doc p`, `.vp-doc h2`, `.vp-doc li` — one class and one
+   element each — and a bare class here is one class, so the reading surface
+   wins wherever a primitive lands on a paragraph or a heading. It did: a field
+   label written as `<p class="sg-label">` came out at reading size in the
+   reading face, three sizes above the same label written as a `<span>`, and a
+   panel's section headings came out as chapter headings. A component's own
+   scoped rule carries an attribute selector and still outranks both, so the
+   pairing raises these to where `docs.css` is without taking anything from the
+   components that build on them. */
+.sg-panel,
+.vp-doc .sg-panel {
   background: var(--sg-panel);
   border: 1px solid var(--sg-rule);
   border-radius: var(--radius-md);
 }
 
-.sg-sunk {
+.sg-sunk,
+.vp-doc .sg-sunk {
   background: var(--sg-panel-sunk);
   border: 1px solid var(--sg-rule-soft);
   border-radius: var(--radius-md);
 }
 
-/* A field label: small, tracked-out, monospace, sitting above its readout. */
-.sg-label {
+/* A field label: small, tracked-out, monospace, sitting above its readout.
+   The same mark whether it is written as a span, a `dt` or the heading of a
+   panel's section, which is why the line-height and margin are stated here
+   rather than left to whatever element it landed on. */
+.sg-label,
+.vp-doc .sg-label {
+  margin: 0;
   font-family: var(--font-mono);
   font-size: 0.625rem;
   font-weight: 500;
+  line-height: 1.4;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--color-text-tertiary);
 }
 
 /* Anything the unit itself said: an address, a byte, a frame. */
-.sg-readout {
+.sg-readout,
+.vp-doc .sg-readout {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'zero' 1;
@@ -204,7 +229,8 @@ body {
 
 /* State dots and chips share one shape so a legend learned once holds
    everywhere. Filled means measured; hollow means the question was never put. */
-.sg-state {
+.sg-state,
+.vp-doc .sg-state {
   --sg-state-color: var(--sg-silent);
   display: inline-flex;
   align-items: center;
@@ -244,6 +270,220 @@ body {
   box-shadow: inset 0 0 0 1px currentColor;
 }
 
+/* --- The address matrix ------------------------------------------------
+   A bank of blocks and a block of offsets are the same picture at two
+   scales, so they are drawn with one set of marks: a row-major grid of
+   sixteen columns, the low nibble along the top and the high one down the
+   side, so an address is read off the edges instead of being printed into
+   every cell. That is the shape the unit's own addressing has, and the shape
+   a hex dump has, which is the only reason a reader can find `1A` in it
+   without counting.
+
+   Two kinds of mark, and the difference between them is the distinction the
+   whole site is built to keep. A *fill* says a measurement exists; a *ring*
+   says one does not. Neither is ever left as a blank cell, because a blank
+   cell reads as a zero.
+
+   The depth ramp on `--sg-cell-<n>` is ink, not a fifth hue: it is the
+   readout's own colour at four strengths, saying how much of a block the
+   archive holds. The four meanings stay with the four tokens, which is why a
+   cell that carries one of them carries it as its whole fill. */
+.sg-matrix,
+.vp-doc .sg-matrix {
+  display: grid;
+  grid-template-columns: 1.9em repeat(16, minmax(0, 1fr));
+  gap: 2px;
+  /* Small on purpose. The cell is a mark in a map, not a button: at this size a
+     bank is taken in at a glance and two of them fit side by side, which is what
+     the measured grid and the document's grid have to do.
+
+     Width as well as max-width, because the columns are `1fr` of nothing: in a
+     flex row the grid has no intrinsic width to be capped, and it collapsed to
+     cells a third of this size. */
+  width: 100%;
+  max-width: 19rem;
+}
+
+/* A row is a wrapper for the template's sake only; the grid is one grid. */
+.sg-matrix__row,
+.vp-doc .sg-matrix__row {
+  display: contents;
+}
+
+/* The nibble printed along the top and down the side, and the corner that
+   says which bank or block the two of them are read against. */
+.sg-matrix__axis,
+.vp-doc .sg-matrix__axis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.sg-matrix__axis--row,
+.vp-doc .sg-matrix__axis--row {
+  justify-content: flex-end;
+  padding-right: 0.4em;
+}
+
+.sg-matrix__corner,
+.vp-doc .sg-matrix__corner {
+  justify-content: flex-end;
+  padding-right: 0.4em;
+  font-size: 0.62rem;
+  /* A block's corner is two bytes wide and the nibble column is one. Let it
+     spill left rather than wrap: wrapped, it makes the header row twice as tall
+     as every other row and the grid stops looking like one. */
+  white-space: nowrap;
+  color: var(--color-text-tertiary);
+}
+
+.sg-cell,
+.vp-doc .sg-cell {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 1px;
+  /* Stated here rather than left to the reading surface: these are cells in a
+     grid, and `.vp-doc a` would otherwise give each one the accent and an
+     underline that is wider than the cell. */
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Every modifier below is written as two classes on purpose. `.vp-doc .sg-cell`
+   above has to exist for the reading surface not to reach in, and it outranks a
+   single class, so a one-class modifier would set a fill the base rule then
+   took away — which is exactly what a grid of blank cells looked like. Two
+   classes match the base's weight and, coming after it, win. */
+
+/* Measured, and how much of it there is. */
+.sg-cell.sg-cell--1 {
+  background: color-mix(in srgb, var(--sg-readout) 16%, transparent);
+}
+.sg-cell.sg-cell--2 {
+  background: color-mix(in srgb, var(--sg-readout) 32%, transparent);
+}
+.sg-cell.sg-cell--3 {
+  background: color-mix(in srgb, var(--sg-readout) 50%, transparent);
+}
+.sg-cell.sg-cell--4 {
+  background: color-mix(in srgb, var(--sg-readout) 70%, transparent);
+}
+
+/* One of the four meanings, carried as the whole fill. */
+.sg-cell.sg-cell--heard {
+  background: var(--sg-heard);
+}
+.sg-cell.sg-cell--silent {
+  background: color-mix(in srgb, var(--sg-silent) 78%, transparent);
+}
+.sg-cell.sg-cell--refused {
+  background: var(--sg-refused);
+}
+
+/* A question that was never put, drawn hollow, as the state dots are: there
+   is a record here, and nothing in it answering this. */
+.sg-cell.sg-cell--unasked {
+  background: color-mix(in srgb, var(--sg-unasked) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sg-unasked) 60%, transparent);
+}
+
+/* Nothing was ever measured here at all — the outline of a place, with the
+   place left empty. Fainter than an unasked question, and never darker: an
+   absence must not read as a reading. */
+.sg-cell.sg-cell--absent {
+  box-shadow: inset 0 0 0 1px var(--sg-rule);
+}
+
+/* An address a document states and the archive holds nothing at: a box the
+   document drew that no reading ever filled. Ink rather than any of the four
+   hues, because a document is not a measurement and never borrows their
+   colours; heavier than an absence, because something was said here. */
+.sg-cell.sg-cell--stated-only {
+  background: color-mix(in srgb, var(--sg-readout) 7%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sg-readout) 42%, transparent);
+}
+
+/* A block whose addresses were also listened to. Thirteen of four hundred and
+   sixty-one, so it is worth a mark of its own; the hue says which way the
+   listening went. */
+.sg-cell__dot {
+  position: absolute;
+  top: 1.5px;
+  right: 1.5px;
+  width: 4px;
+  height: 4px;
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 0 1px var(--sg-panel);
+}
+
+.sg-cell__dot--heard {
+  background: var(--sg-heard);
+}
+
+.sg-cell__dot--silent {
+  background: var(--sg-silent);
+}
+
+/* A block a document states rows for that the archive holds no address for —
+   punched out of the fill rather than added to it, and in the panel's own
+   colour, so it is a hole in what is there rather than a fifth kind of mark. */
+.sg-cell__dot--gap {
+  background: var(--sg-panel);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--sg-readout) 45%, transparent);
+}
+
+a.sg-cell:hover,
+.vp-doc a.sg-cell:hover {
+  outline: 1px solid var(--vp-c-brand-1);
+  outline-offset: 1px;
+}
+
+a.sg-cell:focus-visible,
+.vp-doc a.sg-cell:focus-visible {
+  outline: 2px solid var(--vp-c-brand-1);
+  outline-offset: 1px;
+}
+
+/* The legend that makes the grid readable, in the same marks at the same size
+   so what is learned here is what is seen there. */
+.sg-key,
+.vp-doc .sg-key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4em 1.1em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sg-key li {
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  color: var(--color-text-tertiary);
+}
+
+.sg-key .sg-cell {
+  width: 0.72rem;
+  flex: none;
+}
+
+/* The depth ramp is one item, not four: it is a single fact about the fill. */
+.sg-key__ramp {
+  display: flex;
+  gap: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition-duration: 1ms !important;
@@ -254,7 +494,8 @@ body {
 /* A sentence the archive wrote that no translation covers yet, shown in the
    language it was measured in. Marked as a quotation rather than left to read
    as an interface string somebody forgot to translate. */
-.sg-quoted {
+.sg-quoted,
+.vp-doc .sg-quoted {
   padding-left: 0.9em;
   border-left: 1px solid var(--sg-rule);
   font-style: normal;

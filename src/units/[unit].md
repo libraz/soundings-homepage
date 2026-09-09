@@ -1,5 +1,5 @@
 ---
-pageClass: page-app
+pageClass: page-app page-unit
 aside: false
 outline: false
 ---

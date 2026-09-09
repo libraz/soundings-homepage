@@ -33,18 +33,23 @@ const label = computed(() => (props.compact ? props.path.split('/').pop() : prop
 </template>
 
 <style scoped>
+/* Underlined by the text decoration rather than by a bottom border. A 1px
+   dotted border lands on whatever fraction of a pixel the row it is in happens
+   to sit at, so down a table of seventy rows it appeared on some and not on
+   others; the decoration is drawn from the baseline and is the same on every
+   row. */
 .sg-record {
   font-family: var(--font-mono);
   font-size: 0.72rem;
   letter-spacing: 0.01em;
   color: var(--color-text-tertiary);
-  text-decoration: none;
-  border-bottom: 1px dotted var(--sg-rule);
-  transition: color var(--transition-fast), border-color var(--transition-fast);
+  text-decoration: underline dotted var(--sg-rule);
+  text-underline-offset: 0.28em;
+  transition: color var(--transition-fast), text-decoration-color var(--transition-fast);
 }
 
 .sg-record:hover {
   color: var(--vp-c-brand-1);
-  border-bottom-color: currentColor;
+  text-decoration-color: currentColor;
 }
 </style>

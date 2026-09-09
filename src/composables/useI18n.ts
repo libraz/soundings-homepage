@@ -22,6 +22,18 @@ function lookup(table: unknown, path: string): unknown {
   return path.split('.').reduce<any>((node, key) => (node == null ? undefined : node[key]), table);
 }
 
+/**
+ * The archive writes its prose in ASCII, and an em dash in it is ` -- `.
+ *
+ * That is the record's convention and the record keeps it: JSON that a script
+ * greps and a person reads in a terminal is better off without characters that
+ * depend on the terminal. It is a typographic convention rather than content,
+ * so it is undone here, where the text is being set rather than stored.
+ */
+function dashed(sentence: string): string {
+  return sentence.replace(/ -- /g, ' — ');
+}
+
 function interpolate(template: string, values: Record<string, unknown>): string {
   return template.replace(/\{(\w+)\}/g, (whole, key) =>
     key in values ? String(values[key]) : whole,
@@ -48,6 +60,18 @@ export function useI18n() {
     const found = lookup(strings.value, path) ?? lookup(STRINGS.en, path);
     if (typeof found !== 'string') return path;
     return interpolate(found, values);
+  }
+
+  /**
+   * Several of the archive's own words as one run of text.
+   *
+   * The separator is interface punctuation, not part of any of them, so it is
+   * a translated string: an ideographic comma set between English stimulus
+   * names reads as a page that forgot which language it was in, which is what
+   * a hard-coded one did to every English block page.
+   */
+  function list(items: readonly string[]): string {
+    return items.join(t('common.listSeparator'));
   }
 
   /** A verdict, as a chip label. */
@@ -83,7 +107,11 @@ export function useI18n() {
     const qualifier = qualified
       ? ((lookup(vocabulary.value, `qualifiers.${qualified[2]}`) as string) ?? qualified[2])
       : null;
-    const head = qualifier ? `${identifier}（${qualifier}）` : identifier;
+    // The brackets are the interface's punctuation and not part of either the
+    // identifier or its qualifier, so they are set in the reader's language:
+    // fullwidth ones around an English gloss on an English page read as a
+    // sentence that changed script halfway through.
+    const head = qualifier ? t('common.qualified', { name: identifier, qualifier }) : identifier;
     if (!setting) return head;
     const template = (lookup(vocabulary.value, 'under') as string) ?? '{stimulus} with {setting}';
     return interpolate(template, { stimulus: head, setting });
@@ -100,17 +128,41 @@ export function useI18n() {
    * it was written in rather than disappearing — `yarn check:vocab` lists those.
    */
   function note(sentence: string | null | undefined): string {
-    if (!sentence) return '';
-    const table = (lookup(vocabulary.value, 'notes') ?? {}) as Record<string, string>;
-    return table[sentence] ?? sentence;
+    return quoting('notes', sentence).text;
   }
 
   /** Whether `note()` had to fall back to the archive's own language. */
   function noteIsQuoted(sentence: string | null | undefined): boolean {
-    if (!sentence) return false;
-    if (locale.value === 'en') return false;
-    const table = (lookup(vocabulary.value, 'notes') ?? {}) as Record<string, string>;
-    return !(sentence in table);
+    return quoting('notes', sentence).quoted;
+  }
+
+  /**
+   * A restatement of something a published document says.
+   *
+   * Written in this project's own words rather than copied, so unlike a
+   * measurement note it is ordinary prose and translates freely. It is still
+   * looked up by the exact sentence and still falls back to the English it was
+   * written in, because a document read after the last translation pass would
+   * otherwise vanish from the Japanese page rather than merely arrive in
+   * English.
+   */
+  function stated(sentence: string | null | undefined): string {
+    return quoting('documents', sentence).text;
+  }
+
+  /** Whether `stated()` had to fall back to the language it was written in. */
+  function statedIsQuoted(sentence: string | null | undefined): boolean {
+    return quoting('documents', sentence).quoted;
+  }
+
+  function quoting(bucket: string, sentence: string | null | undefined) {
+    if (!sentence) return { text: '', quoted: false };
+    const table = (lookup(vocabulary.value, bucket) ?? {}) as Record<string, string>;
+    const found = table[sentence];
+    return {
+      text: dashed(found ?? sentence),
+      quoted: locale.value !== 'en' && found === undefined,
+    };
   }
 
   const base = computed(() => site.value.base);
@@ -126,5 +178,19 @@ export function useI18n() {
     return asset(`${prefix}${path}`);
   }
 
-  return { locale, t, short, full, note, noteIsQuoted, resetOutcome, stimulus, asset, route };
+  return {
+    locale,
+    t,
+    list,
+    short,
+    full,
+    note,
+    noteIsQuoted,
+    stated,
+    statedIsQuoted,
+    resetOutcome,
+    stimulus,
+    asset,
+    route,
+  };
 }

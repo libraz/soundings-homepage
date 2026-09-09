@@ -168,9 +168,69 @@ html[lang^='ja'] {
 }
 
 /* The first thing on an application page is a panel, not a heading, so the
-   reading surface's top padding leaves it stranded below the nav. */
+   reading surface's top padding leaves it stranded below the nav.
+
+   The foot is cut for the opposite reason. A page of prose ends on a paragraph
+   and wants air under it; an application page ends on the bottom edge of a
+   panel, and the theme's default left a third of a screen of nothing between
+   that edge and the site footer. */
 .page-app .VPDoc {
   padding-top: var(--space-8);
+  padding-bottom: var(--space-10);
+}
+
+/* The unit's own page is the one whose heading is the unit's name, and the
+   header panel above it already says that name at twice the size. Printed
+   again as an h1 it read as the page having been laid out twice. The heading
+   is where it was — the tab, the history entry and the outline all take their
+   text from it, and a page whose h1 is only in its `<title>` has none — so it
+   is taken out of the picture rather than out of the document. */
+.page-unit .vp-doc h1 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The default theme closes a page with a prev/next footer, opened by a rule
+   across the content. No application page has a prev or a next, so what it
+   contributed was a hairline hanging in the empty space under the last panel,
+   which reads as a section that failed to load. */
+.page-app .VPDocFooter:not(:has(.pager-link, .VPDocFooterLastUpdated)),
+.page-landing .VPDocFooter {
+  display: none;
+}
+
+/* --- Wide tables --------------------------------------------------------
+   A block of 128 addresses and a bank of 85 blocks are wider than the panel
+   they sit in, so each table scrolls inside its own box. On a trackpad the
+   scrollbar is hidden until it moves, so the box has to say for itself that
+   there is more to the right — otherwise a column simply ends at the panel
+   edge and reads as truncated, which is what the programs column of a tone
+   map did.
+
+   Two gradients per edge, both painted on the scroller: the cover is fixed to
+   the box and the shadow scrolls with the content, so where the content is
+   flush against an edge the cover sits over the shadow and hides it. Nothing
+   here is a colour — the shadow is the page's own background darkened, so it
+   holds in either theme without touching the four hues that carry meaning. */
+.page-app .scroller {
+  /* Longhands rather than the shorthand: `background` would reset the
+     background-colour a panel primitive set on the same element, which is what
+     the observations table's scroller is. */
+  background-image:
+    linear-gradient(to right, var(--sg-panel) 30%, transparent),
+    linear-gradient(to left, var(--sg-panel) 30%, transparent),
+    linear-gradient(to right, var(--sg-edge-shadow), transparent),
+    linear-gradient(to left, var(--sg-edge-shadow), transparent);
+  background-position: left center, right center, left center, right center;
+  background-size: 4rem 100%, 4rem 100%, 2.5rem 100%, 2.5rem 100%;
+  background-repeat: no-repeat;
+  background-attachment: local, local, scroll, scroll;
 }
 
 /* --- Landing ------------------------------------------------------------

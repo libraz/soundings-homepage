@@ -32,7 +32,7 @@ const props = defineProps<{
   documents?: CitedDocument[];
 }>();
 
-const { t, short, full, resetOutcome, stimulus, route } = useI18n();
+const { t, list, resetOutcome, stated, statedIsQuoted, stimulus, route } = useI18n();
 
 /** The verdicts a later record has not replaced. */
 const standing = computed(() => {
@@ -52,6 +52,17 @@ const writeState = computed<'heard' | 'silent' | 'refused' | 'unasked'>(() => {
   if (!props.record.w) return 'unasked';
   return props.record.w.c === 'F' || props.record.w.c === 'U' ? 'refused' : 'silent';
 });
+
+/**
+ * The record that established what this address accepts.
+ *
+ * The write probe ran over the whole map once and over a few families since,
+ * and an address reached only by one of the later runs is one the map-wide pass
+ * never asked. Which run it was is the difference between a range measured with
+ * everything else and one measured on its own, so the card names it rather than
+ * letting both read alike.
+ */
+const probedBy = computed(() => props.record.w?.f ?? props.index?.probedBy ?? null);
 
 /**
  * The MIDI messages measured to land here, one row per message.
@@ -75,13 +86,26 @@ const aliases = computed(() => {
   return [...rows.values()];
 });
 
-/** The unit's resets, paired with what each did to this address. */
+/** Whether the unit has resets to say anything about, whatever this address holds. */
+const hasResets = computed(() => (props.index?.resets ?? []).length > 0);
+
+/**
+ * The unit's resets, paired with what each did to this address.
+ *
+ * Empty where the address carries no reset record at all, which is an absence
+ * in the archive rather than an outcome and is answered as one. Filling the
+ * missing positions with `-` would read as the archive having found the mark
+ * would not write here — a statement about the unit that no record makes, and
+ * one most of these addresses contradict by accepting every value written to
+ * them. Where a record is present the data gate has already held it to one code
+ * per reset, so every position is a code the archive put there.
+ */
 const resets = computed(() => {
-  const names = props.index?.resets ?? [];
-  const codes = props.record.r ?? '';
-  return names.map((reset, position) => ({
+  const codes = props.record.r;
+  if (!codes) return [];
+  return (props.index?.resets ?? []).map((reset, position) => ({
     name: reset.name,
-    outcome: resetOutcome(codes[position] ?? '-'),
+    outcome: resetOutcome(codes[position]),
     differedBy: props.record.rp?.[String(position)] ?? null,
   }));
 });
@@ -142,7 +166,10 @@ function verdictKind(verdict: string): string {
           <span class="card__sep">·</span>
           {{ t('address.offset', { offset: (record.o ?? 0) + 1, size: region.size }) }}
         </p>
-        <p v-else-if="record.x" class="card__where">{{ t('address.notMeasured') }}</p>
+        <!-- No region because no sweep put one here. That was once only true of
+             addresses an offset probe found past a region's end; a targeted
+             write probe reaches them too, and both mean the same thing. -->
+        <p v-else class="card__where">{{ t('address.notInARegion') }}</p>
       </div>
       <StateChip :state="heardState" :wording="heardState === 'unasked' ? undefined : audibleWording(standing[0]?.v ?? '')" />
     </header>
@@ -163,6 +190,13 @@ function verdictKind(verdict: string): string {
         <dt class="sg-label">{{ t('address.powerOn') }}</dt>
         <dd class="readout__value sg-readout">{{ record.p ?? '—' }}</dd>
       </div>
+      <!-- What the read that found this address got back. A different fact from
+           the power-on value and often the only one there is: an address past a
+           region's mapped end was reached by one read and by nothing since. -->
+      <div class="readout">
+        <dt class="sg-label">{{ t('address.sweepValue') }}</dt>
+        <dd class="readout__value sg-readout">{{ record.s ?? '—' }}</dd>
+      </div>
       <div class="readout">
         <dt class="sg-label">{{ t('address.accepts') }}</dt>
         <dd class="readout__value">
@@ -172,6 +206,11 @@ function verdictKind(verdict: string): string {
             <span class="readout__note">
               {{ t('address.acceptedOf', { accepted: record.w.n, tried: record.w.t }) }}
             </span>
+            <!-- Which run established this. Most addresses were reached by the
+                 map-wide pass and say so through the index; the ones a targeted
+                 run reached name it themselves, and are the only addresses here
+                 the map-wide pass never asked at all. -->
+            <RecordLink v-if="probedBy" :unit-id="unitId" :path="probedBy" compact />
           </template>
           <span v-else class="readout__absent">{{ t('address.notMeasured') }}</span>
         </dd>
@@ -179,8 +218,20 @@ function verdictKind(verdict: string): string {
       <div class="readout">
         <dt class="sg-label">{{ t('address.neighbours') }}</dt>
         <dd class="readout__value">
+          <!-- A run asked on its own answers for this address; the region's own
+               verdict is about a different set of addresses and does not. -->
+          <template v-if="record.h">
+            <StateChip
+              :state="record.h.v === 'D' ? 'silent' : 'refused'"
+              :wording="holdWording(record.h.v)"
+            />
+            <span class="readout__note">
+              {{ t('address.askedAsARun', { length: record.h.l, start: record.h.s }) }}
+            </span>
+            <RecordLink :unit-id="unitId" :path="record.h.f" compact />
+          </template>
           <StateChip
-            v-if="region?.hold"
+            v-else-if="region?.hold"
             :state="region.hold === 'D' ? 'silent' : 'refused'"
             :wording="holdWording(region.hold)"
           />
@@ -208,9 +259,10 @@ function verdictKind(verdict: string): string {
     </section>
 
     <!-- What each reset put back -->
-    <section v-if="resets.length" class="card__section">
+    <section v-if="hasResets" class="card__section">
       <h3 class="sg-label">{{ t('address.resets') }}</h3>
-      <ul class="resets">
+      <p v-if="!resets.length" class="card__absent">{{ t('address.notMeasuredBody') }}</p>
+      <ul v-else class="resets">
         <li v-for="reset in resets" :key="reset.name">
           <span class="resets__name">{{ reset.name }}</span>
           <span class="resets__outcome" :title="reset.outcome.full">{{ reset.outcome.short }}</span>
@@ -241,15 +293,15 @@ function verdictKind(verdict: string): string {
         </p>
         <p v-if="entry.hb.length" class="verdict__line">
           <span class="sg-label">{{ t('address.heardBy') }}</span>
-          <span>{{ entry.hb.map(stimulus).join('、') }}</span>
+          <span>{{ list(entry.hb.map(stimulus)) }}</span>
         </p>
         <p v-if="entry.nb.length" class="verdict__line">
           <span class="sg-label">{{ t('address.notHeardBy') }}</span>
-          <span>{{ entry.nb.map(stimulus).join('、') }}</span>
+          <span>{{ list(entry.nb.map(stimulus)) }}</span>
         </p>
         <p v-if="entry.iu.length" class="verdict__line">
           <span class="sg-label">{{ t('address.inconclusiveUnder') }}</span>
-          <span>{{ entry.iu.map(stimulus).join('、') }}</span>
+          <span>{{ list(entry.iu.map(stimulus)) }}</span>
         </p>
         <p v-if="entry.how" class="verdict__how">{{ entry.how }}</p>
         <p v-if="entry.sup" class="verdict__superseded">
@@ -273,18 +325,26 @@ function verdictKind(verdict: string): string {
           <span v-if="claim.t !== claim.a" class="sg-readout stated__template">{{ claim.t }}</span>
         </p>
         <dl class="stated__rows">
+          <!--
+            Both sides named, never two values left to be told apart by their
+            order. A verdict of `differs` that does not show what it differs
+            from asks a reader to hold two halves of the card in their head,
+            and one that shows both without saying which is which asks worse.
+            The measured side appears only where the two were actually held
+            against each other: under every other verdict there is nothing to
+            show it against, and a measurement set beside a claim nobody
+            compared it with would read as a comparison.
+          -->
           <div v-if="claim.data" class="stated__row">
             <dt class="sg-label">{{ t('claims.range') }}</dt>
             <dd>
-              <span class="sg-readout">{{ claim.data }}</span>
-              <!--
-                The measured side, beside the stated one. A verdict of `differs`
-                that does not show what it differs from asks a reader to hold two
-                halves of the card in their head, and the half that matters is
-                the measured one.
-              -->
-              <span v-if="compared(claim.range) && claim.measuredRange" class="stated__measured">
-                {{ t('claims.measured', { value: claim.measuredRange }) }}
+              <span class="stated__side">
+                <span class="stated__sideLabel">{{ t('claims.inDocument') }}</span>
+                <span class="sg-readout">{{ claim.data }}</span>
+              </span>
+              <span v-if="compared(claim.range) && claim.measuredRange" class="stated__side">
+                <span class="stated__sideLabel">{{ t('claims.asMeasured') }}</span>
+                <span class="sg-readout">{{ claim.measuredRange }}</span>
               </span>
               <span class="stated__verdict" :class="`stated__verdict--${verdictKind(claim.range)}`">
                 {{ t(`claims.verdict.${claim.range}`) }}
@@ -294,12 +354,16 @@ function verdictKind(verdict: string): string {
           <div v-if="claim.default" class="stated__row">
             <dt class="sg-label">{{ t('claims.initial') }}</dt>
             <dd>
-              <span class="sg-readout">{{ claim.default }}</span>
-              <span v-if="claim.defaultDescription" class="stated__gloss">
-                ({{ claim.defaultDescription }})
+              <span class="stated__side">
+                <span class="stated__sideLabel">{{ t('claims.inDocument') }}</span>
+                <span class="sg-readout">{{ claim.default }}</span>
+                <span v-if="claim.defaultDescription" class="stated__gloss">
+                  ({{ claim.defaultDescription }})
+                </span>
               </span>
-              <span v-if="compared(claim.initial) && claim.poweredOn" class="stated__measured">
-                {{ t('claims.measured', { value: claim.poweredOn }) }}
+              <span v-if="compared(claim.initial) && claim.poweredOn" class="stated__side">
+                <span class="stated__sideLabel">{{ t('claims.asMeasured') }}</span>
+                <span class="sg-readout">{{ claim.poweredOn }}</span>
               </span>
               <span class="stated__verdict" :class="`stated__verdict--${verdictKind(claim.initial)}`">
                 {{ t(`claims.verdict.${claim.initial}`) }}
@@ -314,11 +378,22 @@ function verdictKind(verdict: string): string {
             <dt class="sg-label">{{ t('claims.width') }}</dt>
             <dd>{{ t('claims.widthBody', { bytes: claim.bytes }) }}</dd>
           </div>
+          <!--
+            Why a hand-read row carries the columns it does. Usually because the
+            page states them once, on the line above: without this the row reads
+            as a document saying nothing about an address it does name.
+          -->
+          <div v-if="claim.why" class="stated__row">
+            <dt class="sg-label">{{ t('claims.howItIsPrinted') }}</dt>
+            <dd :class="{ 'sg-quoted': statedIsQuoted(claim.why) }">{{ stated(claim.why) }}</dd>
+          </div>
         </dl>
 
         <!-- A note the page printed about this row, restated rather than copied. -->
         <div v-if="claim.q" class="stated__note">
-          <p>{{ claim.q.restated }}</p>
+          <p :class="{ 'sg-quoted': statedIsQuoted(claim.q.restated) }">
+            {{ stated(claim.q.restated) }}
+          </p>
           <!--
             Only where the note names a reset. A note about something else has
             nothing to say about any of them, and three rows of "not stated" is
@@ -599,10 +674,19 @@ function verdictKind(verdict: string): string {
   align-items: baseline;
 }
 
-.stated__measured {
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  color: var(--color-text-secondary);
+/* One side of the comparison, its name set against it. The label is quiet and
+   the value is not: which side this is has to be readable, but the two values
+   are what the row is for. */
+.stated__side {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.stated__sideLabel {
+  font-family: var(--font-reading);
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
 }
 
 .stated__gloss,

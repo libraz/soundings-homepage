@@ -17,6 +17,7 @@ import {
 import { useI18n } from '../composables/useI18n';
 import AddressCard from './AddressCard.vue';
 import DocumentLink from './DocumentLink.vue';
+import OffsetMatrix from './OffsetMatrix.vue';
 import StateChip from './StateChip.vue';
 
 /**
@@ -30,7 +31,7 @@ import StateChip from './StateChip.vue';
  */
 const props = defineProps<{ unitId: string; block: string }>();
 
-const { t, note, noteIsQuoted, stimulus } = useI18n();
+const { t, list, note, noteIsQuoted, short, stated, statedIsQuoted, stimulus } = useI18n();
 
 const {
   data: regionIndex,
@@ -103,6 +104,20 @@ function heardWording(record: AddressRecord): string | undefined {
   return first ? audibleWording(first.v) : undefined;
 }
 
+/**
+ * The MIDI messages measured to land here, named once each.
+ *
+ * The archive scanned some stimuli twice — once over a region prefix and once
+ * over the whole map — so the same message arrives from two records. That is
+ * two records establishing one fact, and the row said it twice: `CC0 then
+ * program change, CC0 then program change, DT1 40 11 00`. The card has always
+ * folded them; the cell they are read in first does now too.
+ */
+function reachedBy(record: AddressRecord): string {
+  const named = (record.al ?? []).map((alias) => stimulus(alias.s));
+  return list([...new Set(named)]);
+}
+
 function writeState(record: AddressRecord): 'silent' | 'refused' {
   return record.w?.c === 'F' || record.w?.c === 'U' ? 'refused' : 'silent';
 }
@@ -113,6 +128,27 @@ function toggle(address: string): void {
   const key = anchor(address);
   open.value = open.value === key ? null : key;
 }
+
+/**
+ * A cell of the grid opens its address rather than toggling it.
+ *
+ * The grid is an index, and an index that closed what you clicked when you
+ * clicked it twice would be a switch. Scrolling is the anchor's own job.
+ */
+function reveal(address: string): void {
+  open.value = anchor(address);
+}
+
+/**
+ * The grey fill in the grid's legend, in the archive's own two wordings.
+ *
+ * It stands for every verdict that is not "audible", and the archive has two of
+ * those: not audible under what was tried, and could not be measured. Naming
+ * only the first would put a claim in the legend that ten addresses contradict.
+ */
+const notHeardWording = computed(() =>
+  list([short(audibleWording('N')), short(audibleWording('X'))]),
+);
 
 // A link to an address should land on it opened, not merely scrolled to.
 onMounted(() => {
@@ -179,7 +215,67 @@ onMounted(() => {
 
         <p v-if="records.length === 0" class="block__absent">{{ t('address.notMeasuredBody') }}</p>
 
-        <div v-else class="scroller">
+        <!-- The block's 128 offsets before its rows: which of them the archive
+             reached, which of those were listened to, and where in the table
+             below any one of them is. -->
+        <div v-if="records.length" class="offsets">
+          <figure class="plot">
+            <figcaption class="plot__title sg-label">{{ t('map.grid.measured') }}</figcaption>
+            <OffsetMatrix
+              :block="blockLabel"
+              variant="measured"
+              :records="records"
+              @select="reveal"
+            />
+            <ul class="sg-key plot__key">
+              <li>
+                <span class="sg-cell sg-cell--heard" aria-hidden="true" />
+                {{ short(audibleWording('Y')) }}
+              </li>
+              <li>
+                <span class="sg-cell sg-cell--silent" aria-hidden="true" />
+                {{ notHeardWording }}
+              </li>
+              <li>
+                <span class="sg-cell sg-cell--unasked" aria-hidden="true" />
+                {{ t('map.grid.unasked') }}
+              </li>
+              <li>
+                <span class="sg-cell sg-cell--absent" aria-hidden="true" />
+                {{ t('map.grid.absent') }}
+              </li>
+            </ul>
+          </figure>
+
+          <!-- The same 128 offsets as the document has them. Apart from the
+               measurements, on the same geometry, in none of the four colours. -->
+          <figure v-if="claimShard" class="plot">
+            <figcaption class="plot__title sg-label">{{ t('map.grid.stated') }}</figcaption>
+            <OffsetMatrix
+              :block="blockLabel"
+              variant="stated"
+              :claims="claimShard.claims"
+              :absent="claimShard.absent"
+              @select="reveal"
+            />
+            <ul class="sg-key plot__key">
+              <li>
+                <span class="sg-cell sg-cell--3" aria-hidden="true" />
+                {{ t('map.grid.joined') }}
+              </li>
+              <li>
+                <span class="sg-cell sg-cell--stated-only" aria-hidden="true" />
+                {{ t('map.grid.statedOnly') }}
+              </li>
+              <li>
+                <span class="sg-cell sg-cell--absent" aria-hidden="true" />
+                {{ t('map.grid.unstated') }}
+              </li>
+            </ul>
+          </figure>
+        </div>
+
+        <div v-if="records.length" class="scroller">
           <table class="grid grid--dense">
             <thead>
               <tr>
@@ -217,13 +313,22 @@ onMounted(() => {
                   <span v-else class="grid__absent">{{ t('address.notMeasured') }}</span>
                 </td>
                 <td class="row__aliases">
-                  <span v-if="record.al?.length">
-                    {{ record.al.map((alias) => stimulus(alias.s)).join('、') }}
-                  </span>
+                  <span v-if="reachedBy(record)">{{ reachedBy(record) }}</span>
                   <span v-else class="grid__absent">{{ t('address.notMeasured') }}</span>
                 </td>
                 <td class="row__heard">
-                  <StateChip :state="heardState(record)" :wording="heardWording(record)" />
+                  <!-- A chip with no verdict to name draws a bare mark, which
+                       reads as nothing at all. An address nobody listened to is
+                       an absence, and the row says so in the same words as its
+                       other columns. -->
+                  <StateChip
+                    v-if="heardWording(record)"
+                    :state="heardState(record)"
+                    :wording="heardWording(record)"
+                  />
+                  <span v-else-if="!record.nb" class="grid__absent">
+                    {{ t('address.notMeasured') }}
+                  </span>
                   <!-- An address that cannot be asked says why, in the archive's
                        own words, rather than standing as a bare absence. -->
                   <span
@@ -263,8 +368,19 @@ onMounted(() => {
           <ul class="absent__list">
             <li v-for="row in claimShard.absent" :key="`${row.d}-${row.a}`">
               <span class="sg-readout">{{ row.a }}</span>
-              <span class="absent__parameter">{{ row.parameter ?? '—' }}</span>
-              <span v-if="row.data" class="sg-readout absent__range">{{ row.data }}</span>
+              <!-- A row the page gives no columns of its own says so, rather
+                   than standing as a dash the document did not print. -->
+              <span
+                v-if="!row.parameter && row.why"
+                class="absent__why"
+                :class="{ 'sg-quoted': statedIsQuoted(row.why) }"
+              >
+                {{ stated(row.why) }}
+              </span>
+              <template v-else>
+                <span class="absent__parameter">{{ row.parameter ?? '—' }}</span>
+                <span v-if="row.data" class="sg-readout absent__range">{{ row.data }}</span>
+              </template>
               <DocumentLink
                 v-if="documentOf(row.d)"
                 :document="documentOf(row.d)!"
@@ -272,6 +388,39 @@ onMounted(() => {
               />
             </li>
           </ul>
+        </section>
+
+        <!--
+          What the document states under a table rather than beside a row. No
+          verdict, and not for want of one: these say what a parameter does or
+          what a message leaves behind, and the archive holds no reading that
+          either agrees with that or does not. Each says so, and says what
+          would have to be measured for it to be answerable at all.
+        -->
+        <section v-if="claimShard?.statements?.length" class="notes sg-sunk">
+          <h3 class="sg-label">{{ t('claims.tableNotes') }}</h3>
+          <p class="notes__body">{{ t('claims.tableNotesBody') }}</p>
+          <article v-for="statement in claimShard.statements" :key="statement.id" class="note">
+            <p
+              class="note__restated"
+              :class="{ 'sg-quoted': statedIsQuoted(statement.restated) }"
+            >
+              {{ stated(statement.restated) }}
+            </p>
+            <p class="note__open" :class="{ 'sg-quoted': statedIsQuoted(statement.open) }">
+              {{ stated(statement.open) }}
+            </p>
+            <p class="note__reach">
+              <span class="sg-readout">
+                {{ t('claims.reachesHere', { count: statement.addresses?.length ?? 0 }) }}
+              </span>
+              <DocumentLink
+                v-if="documentOf(statement.d)"
+                :document="documentOf(statement.d)!"
+                :page="statement.page"
+              />
+            </p>
+          </article>
         </section>
       </section>
     </template>
@@ -314,6 +463,59 @@ onMounted(() => {
 
 .absent__range {
   font-size: 0.78rem;
+  color: var(--color-text-tertiary);
+}
+
+.absent__why {
+  max-width: 34rem;
+  font-family: var(--font-reading);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--color-text-tertiary);
+}
+
+/* Notes the document prints under a table. Achromatic on purpose: the four
+   colours mean measured things, and nothing here has been measured. */
+.notes {
+  margin-top: var(--space-5);
+  padding: var(--space-4);
+}
+
+.notes__body {
+  margin: 0.3rem 0 0.7rem;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.note {
+  padding-top: var(--space-3);
+  border-top: 1px dotted var(--sg-rule);
+}
+
+.note__restated {
+  margin: 0;
+  max-width: var(--sg-measure-wide);
+  font-family: var(--font-reading);
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+
+.note__open {
+  margin: 0.35rem 0 0;
+  max-width: var(--sg-measure-wide);
+  font-family: var(--font-reading);
+  font-size: 0.78rem;
+  line-height: 1.65;
+  color: var(--color-text-tertiary);
+}
+
+.note__reach {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin: 0.4rem 0 0.2rem;
+  font-size: 0.75rem;
   color: var(--color-text-tertiary);
 }
 
@@ -363,6 +565,29 @@ onMounted(() => {
   font-size: 0.8125rem;
   font-weight: 400;
   color: var(--color-text-tertiary);
+}
+
+/* The grids of offsets, and the key to each, above the rows they index. */
+.offsets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5) var(--space-8);
+  padding: var(--space-2) var(--space-5) var(--space-5);
+}
+
+.plot {
+  flex: 0 1 19rem;
+  min-width: 11rem;
+  margin: 0;
+}
+
+.plot__title {
+  margin-bottom: var(--space-3);
+}
+
+.plot__key {
+  margin-top: var(--space-4);
+  max-width: 22rem;
 }
 
 /* Wide tables scroll on their own rather than pushing the page sideways. */
@@ -454,20 +679,33 @@ onMounted(() => {
   gap: var(--space-3);
 }
 
-.row__aliases {
+/* Qualified by the cell as well as the class: `.grid td` sets `nowrap` and
+   carries a type selector, so a bare class here loses to it and the two columns
+   meant to wrap never did. */
+.grid td.row__aliases {
   white-space: normal;
   max-width: 22rem;
   font-size: 0.78rem;
   color: var(--color-text-secondary);
 }
 
-.row__heard {
+.grid td.row__heard {
   white-space: normal;
 }
 
 .row__cannot {
-  display: block;
-  max-width: 26rem;
+  /* Inline-block, not block: a table cell sized from its content gives a block
+     child the cell's own width, and the width the note is meant to wrap at goes
+     unused. Set on the note itself it is the note's width, and the cell is
+     sized from that -- which is why it has to be narrow. This is the last
+     column, so whatever width the note takes is width the whole table takes,
+     and a sentence set at its comfortable reading width pushed the table past
+     the panel it sits in. */
+  display: inline-block;
+  max-width: 15rem;
+  /* Stated on the note rather than left to the cell: an own declaration beats
+     an inherited one however specific the inherited one's selector is. */
+  white-space: normal;
   margin-top: 0.2rem;
   font-family: var(--font-reading);
   font-size: 0.72rem;
@@ -490,11 +728,11 @@ onMounted(() => {
   .expanded td {
     padding: var(--space-3);
   }
-  .row__aliases {
+  .grid td.row__aliases {
     max-width: 14rem;
   }
   .row__cannot {
-    max-width: 14rem;
+    max-width: 12rem;
   }
 }
 </style>

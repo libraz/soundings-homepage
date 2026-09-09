@@ -165,8 +165,21 @@ export interface AddressRecord {
   p?: string;
   /** reached only by a single-byte read past a region's end */
   x?: boolean;
-  /** write probe */
-  w?: { c: string; r: string; n: number; t: number; v?: string[]; k?: boolean };
+  /**
+   * Write probe. `f` names the record only where it is not the map-wide pass,
+   * which answers for all but thirty-odd of the addresses; the region index
+   * carries that one as `probedBy` rather than every address repeating it.
+   */
+  w?: { c: string; r: string; n: number; t: number; v?: string[]; k?: boolean; f?: string };
+  /**
+   * A hold verdict taken over a run of addresses rather than over a region.
+   *
+   * The map-wide pass asks each region as a whole and its verdict sits on the
+   * region. A later run can ask a stretch inside or past one, and what it found
+   * is about those addresses and no others — so it is carried here, where it can
+   * be shown instead of the region's own.
+   */
+  h?: { v: string; a: number; l: number; s: string; f: string };
   /** one character per reset, in the unit's reset order */
   r?: string;
   /** the pair a reset left it differing by, keyed by reset index */
@@ -212,6 +225,8 @@ export interface Claim {
   defaultDescription: string | null;
   /** cells of a continued row whose column the extraction could not settle */
   unresolved: string[] | null;
+  /** why a hand-read row has the columns it has, where a reader wrote one */
+  why: string | null;
   /** how many bytes the document says the parameter occupies */
   bytes: number | null;
   range: string;
@@ -236,6 +251,7 @@ export interface AbsentClaim {
   parameter: string | null;
   data: string | null;
   default: string | null;
+  why: string | null;
 }
 
 export interface CitedDocument {
@@ -249,12 +265,121 @@ export interface CitedDocument {
   pages: number;
 }
 
+/**
+ * Something a document states under a table rather than beside a row.
+ *
+ * It carries no verdict and never will: it states what a parameter does or what
+ * a message leaves behind, and no measurement in the archive either agrees with
+ * that or disagrees. `open` is what would have to be measured to answer it, and
+ * `readAs` is which addresses the note was taken to reach — a reading, written
+ * down so a reader can disagree with it.
+ */
+export interface DocumentStatement {
+  id: string;
+  /** document id */
+  d: string;
+  page: number;
+  restated: string;
+  readAs: string;
+  open: string;
+  /** the addresses in this block it reaches; absent on the unit-wide summary */
+  addresses?: string[];
+  /** how many blocks it reaches in all */
+  blocks: number | string[];
+  /** how many addresses it reaches in all; only on the unit-wide summary */
+  reached?: number;
+  /** the rows it names, as the document prints them; only on the summary */
+  covers?: string[];
+}
+
 export interface ClaimShard {
   unitId: string;
   block: string;
   documents: CitedDocument[];
   claims: Claim[];
   absent: AbsentClaim[];
+  statements: DocumentStatement[];
+}
+
+/** A row of a document's table that the archive holds no address for. */
+export interface AbsentRow {
+  /** the address as the document prints it */
+  t: string;
+  d: string;
+  page: number;
+  parameter: string | null;
+  data: string | null;
+  default: string | null;
+  why: string | null;
+  /** the blocks it would have reached */
+  blocks: string[];
+}
+
+/**
+ * Everything one unit's documents came to, in one file.
+ *
+ * The verdict tallies are kept per facet — the range a document states and the
+ * initial value it states are compared separately, and a row can be plain about
+ * one and silent about the other. Summed into a single figure they would read as
+ * twice as many claims, each with a verdict that traces back to no column.
+ */
+export interface ClaimSummary {
+  unitId: string;
+  documents: CitedDocument[];
+  blocks: string[];
+  counts: {
+    range: Record<string, number>;
+    initial: Record<string, number>;
+    resets: Record<string, number>;
+    claims: number;
+    absent: number;
+  };
+  byBlock: { b: string; claims: number; absent: number; differs: number }[];
+  absentRows: AbsentRow[];
+  statements: DocumentStatement[];
+}
+
+/**
+ * One joined claim as the flat comparison table carries it.
+ *
+ * The order is the file's own `columns` header, and the two facets are kept
+ * apart here as they are everywhere else: `stated`/`measured`/`range` is what
+ * the document printed as a range against what a write probe established, and
+ * `statedInitial`/`poweredOn`/`initial` is what it printed as a starting value
+ * against what the unit held when it was switched on. A row can be plain about
+ * one and silent about the other.
+ */
+export type ComparisonRow = [
+  /** address */
+  string,
+  /** the address as the document prints it, letters and all */
+  string,
+  /** parameter name */
+  string | null,
+  /** document id */
+  string,
+  /** printed page */
+  number,
+  /** the range the document states */
+  string | null,
+  /** the range the write probe established */
+  string | null,
+  /** the verdict on the two */
+  string,
+  /** the initial value the document states */
+  string | null,
+  /** what the unit held at power-on */
+  string | null,
+  /** the verdict on those two */
+  string,
+];
+
+/** Every joined claim for one unit, flat, for reading the comparison at large. */
+export interface ClaimComparison {
+  unitId: string;
+  documents: CitedDocument[];
+  columns: string[];
+  rows: ComparisonRow[];
 }
 
 export interface Region {
@@ -288,4 +413,6 @@ export interface RegionIndex {
     neverCandidates: string[];
   } | null;
   resets: { name: string; message: string | null; note: string | null }[];
+  /** The write-probe record an address's own `w.f` falls back to. */
+  probedBy: string | null;
 }

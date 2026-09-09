@@ -190,7 +190,11 @@ watch(query, (value) => {
 </script>
 
 <template>
-  <div class="search" :class="{ 'search--compact': compact }">
+  <!-- The compact form is dropped straight onto a unit's page with nothing
+       around it, where the full one sits inside the front page's console. It
+       takes the same panel so that it reads as a control rather than as text
+       that came to rest under the header above it. -->
+  <div class="search" :class="{ 'search--compact': compact, 'sg-panel': compact }">
     <div class="search__fields">
       <label v-if="allUnits.length > 1" class="field">
         <span class="sg-label">{{ t('search.unit') }}</span>
@@ -303,6 +307,11 @@ watch(query, (value) => {
 <style scoped>
 .search {
   width: 100%;
+}
+
+.search--compact {
+  margin-top: var(--space-6);
+  padding: var(--space-4) var(--space-5) var(--space-5);
 }
 
 .search__fields {

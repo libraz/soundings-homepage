@@ -94,41 +94,50 @@ const stimuli = computed(() => data.value?.stimuli ?? []);
           </span>
         </header>
 
-        <!-- Every sentence below is the record's, not the interface's: it is
-             shown translated where a translation exists and quoted in the
-             archive's own English where none does. -->
-        <p class="behaviour__summary" :class="{ 'sg-quoted': noteIsQuoted(behaviour.summary) }">
-          {{ note(behaviour.summary) }}
-        </p>
+        <!-- What was found and what was not, beside each other where the page
+             is wide enough to hold them. Set one under the other they were a
+             column of prose down the left of a panel twice its width, with the
+             limits alone running the full span; the reader was asked to take a
+             finding on one measure and its limits on another. -->
+        <div class="behaviour__body">
+          <div class="behaviour__account">
+            <!-- Every sentence below is the record's, not the interface's: it
+                 is shown translated where a translation exists and quoted in
+                 the archive's own English where none does. -->
+            <p class="behaviour__summary" :class="{ 'sg-quoted': noteIsQuoted(behaviour.summary) }">
+              {{ note(behaviour.summary) }}
+            </p>
 
-        <div class="behaviour__field">
-          <p class="sg-label">{{ t('unit.method') }}</p>
-          <p class="behaviour__prose" :class="{ 'sg-quoted': noteIsQuoted(behaviour.method) }">
-            {{ note(behaviour.method) }}
-          </p>
-        </div>
+            <div class="behaviour__field">
+              <p class="sg-label">{{ t('unit.method') }}</p>
+              <p class="behaviour__prose" :class="{ 'sg-quoted': noteIsQuoted(behaviour.method) }">
+                {{ note(behaviour.method) }}
+              </p>
+            </div>
 
-        <p
-          v-if="behaviour.note"
-          class="behaviour__prose behaviour__note"
-          :class="{ 'sg-quoted': noteIsQuoted(behaviour.note) }"
-        >
-          {{ note(behaviour.note) }}
-        </p>
-
-        <!-- A limit is a finding too, so it is set in the same size as the rest
-             and bounded by a full border rather than tucked underneath. -->
-        <div v-if="behaviour.notEstablished.length" class="limits">
-          <p class="sg-label limits__label">{{ t('unit.notEstablished') }}</p>
-          <ul class="limits__list">
-            <li
-              v-for="limit in behaviour.notEstablished"
-              :key="limit"
-              :class="{ 'sg-quoted': noteIsQuoted(limit) }"
+            <p
+              v-if="behaviour.note"
+              class="behaviour__prose behaviour__note"
+              :class="{ 'sg-quoted': noteIsQuoted(behaviour.note) }"
             >
-              {{ note(limit) }}
-            </li>
-          </ul>
+              {{ note(behaviour.note) }}
+            </p>
+          </div>
+
+          <!-- A limit is a finding too, so it is set in the same size as the
+               rest and bounded by a full border rather than tucked underneath. -->
+          <div v-if="behaviour.notEstablished.length" class="limits">
+            <p class="sg-label limits__label">{{ t('unit.notEstablished') }}</p>
+            <ul class="limits__list">
+              <li
+                v-for="limit in behaviour.notEstablished"
+                :key="limit"
+                :class="{ 'sg-quoted': noteIsQuoted(limit) }"
+              >
+                {{ note(limit) }}
+              </li>
+            </ul>
+          </div>
         </div>
       </article>
 
@@ -236,8 +245,29 @@ const stimuli = computed(() => data.value?.stimuli ?? []);
   word-break: break-all;
 }
 
+.behaviour__body {
+  margin-top: var(--space-4);
+}
+
+/* Two columns once there is room for two measures side by side, and one below
+   that. The limits column is given a floor rather than a share: a list of two
+   short sentences squeezed into a third of a narrow panel wraps every line,
+   and below its floor the two go back to being stacked. */
+@media (min-width: 1080px) {
+  .behaviour__body:has(.limits) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(19rem, 0.75fr);
+    gap: var(--space-6);
+    align-items: start;
+  }
+
+  .behaviour__body:has(.limits) .limits {
+    margin-top: 0;
+  }
+}
+
 .behaviour__summary {
-  margin: var(--space-4) 0 0;
+  margin: 0;
   max-width: var(--sg-measure);
   font-family: var(--font-reading);
   font-size: 1rem;

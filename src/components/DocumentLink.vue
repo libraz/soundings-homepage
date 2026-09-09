@@ -32,15 +32,20 @@ const title = computed(() =>
 </template>
 
 <style scoped>
+/* No underline. This is a citation and not a link — the document is not hosted
+   here and there is nowhere to go — so an underline would be an affordance
+   offering something that is not there. Down a table of seventy rows all
+   citing the same edition it was noise as well; what carries the citation is
+   the monospace and the page number set a shade brighter than the title. */
 .sg-cite {
   font-family: var(--font-mono);
   font-size: 0.72rem;
   letter-spacing: 0.01em;
-  color: var(--color-text-tertiary);
-  border-bottom: 1px dotted var(--sg-rule);
+  color: var(--color-text-muted);
+  cursor: help;
 }
 
 .sg-cite__page {
-  color: var(--color-text-secondary);
+  color: var(--color-text-tertiary);
 }
 </style>
