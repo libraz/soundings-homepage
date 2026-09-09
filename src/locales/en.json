@@ -233,7 +233,7 @@
     "blocksReached": "{reached} of {blocks} blocks reached",
     "notHosted": "The document is not distributed here and no licence over it is granted or claimed. Each citation names the edition and the number printed on the page, which is what a reader holding their own copy needs to check it.",
     "found": "What the comparison found",
-    "noneDiffer": "Nothing the document states and the archive measured disagrees. Every apparent difference so far has turned out to be a comparison being made wrong rather than a unit behaving unexpectedly, which is why each of the facets below says how many times there was nothing comparable to compare.",
+    "noneDiffer": "Nothing the document states and the archive measured disagrees. Many claims cannot be compared at all: the document is silent, nothing has been measured, or the two sides are not describing the same quantity. None of those is agreement, so each facet below counts them as verdicts of their own rather than folding them into a single number.",
     "someDiffer": "{count} claim(s) state something the archive measured differently. A difference is worth doubting before it is worth reporting: check the block page, and check that both sides are speaking about the same quantity.",
     "resets": "What a reset leaves",
     "absent": "Stated, not measured",
