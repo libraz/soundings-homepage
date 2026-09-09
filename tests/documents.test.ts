@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error -- the sync scripts are plain JS with JSDoc types
-import { asByte, asRange, claimsFor, covers, sizeInBytes } from '../scripts/lib/documents.mjs';
+import {
+  asByte,
+  asRange,
+  claimsFor,
+  covers,
+  sizeInBytes,
+  statementsFor,
+} from '../scripts/lib/documents.mjs';
 
 /**
  * The rules that decide whether the site says a unit disagrees with its manual.
@@ -196,5 +203,73 @@ describe('an address the document states and the archive does not hold', () => {
     // invent up to a hundred and twenty-eight absences nobody claimed.
     const { absent } = join([row({ address: '20 b0 pp' })], new Map());
     expect(absent).toEqual([]);
+  });
+
+  it('is asked block by block, so a row measured in one is still absent in another', () => {
+    // A row whose middle byte is a letter states the same thing about every
+    // part. Answered for the row as a whole, the day a targeted probe reached
+    // four of the sixteen took the other twelve absences off the page with it.
+    const held = new Map([['40 20 20', measured({ a: '40 20 20' })]]);
+    const { claims, absent } = claimsFor({
+      document: { addressMap: { rows: [row({ address: '40 2x 20' })] }, qualifications: {} },
+      addresses: held,
+      resets,
+      blocks: ['40 20', '40 21', '40 22'],
+    });
+    expect(claims.map((claim: { a: string }) => claim.a)).toEqual(['40 20 20']);
+    expect(absent.map((entry: { a: string }) => entry.a)).toEqual(['40 21 20', '40 22 20']);
+  });
+
+  it('carries why a hand-read row has the columns it has', () => {
+    // Without it the row arrives as three dashes, which reads as a document
+    // that stated nothing rather than one that stated it a line earlier.
+    const continued = {
+      address: '40 1x 2B#',
+      page: 238,
+      why: 'the second byte of PITCH FINE TUNE',
+    };
+    const { absent } = join([continued], new Map());
+    expect(absent[0]).toMatchObject({ parameter: null, why: 'the second byte of PITCH FINE TUNE' });
+  });
+});
+
+describe('what a document states under a table rather than beside a row', () => {
+  const note = {
+    id: 'chorus-and-delay-not-at-once',
+    page: 240,
+    restated: 'The document states that the two cannot be used at once.',
+    read_as: 'The note names the two parameters and reaches the rows carrying them.',
+    open: 'A comparison with each set alone and with both set together.',
+    covers: ['41 m6 rr', '41 m9 rr'],
+  };
+
+  function reached(addresses: string[]) {
+    return statementsFor({
+      document: { statements: { statements: [note] } },
+      addresses: new Map(addresses.map((address) => [address, measured({ a: address })])),
+    });
+  }
+
+  it('reaches every address its printed rows cover, and says which blocks', () => {
+    const [found] = reached(['41 06 24', '41 09 24', '41 07 24']);
+    expect(found.addresses).toEqual(['41 06 24', '41 09 24']);
+    expect(found.blocks).toEqual(['41 06', '41 09']);
+  });
+
+  it('carries no verdict, because there is nothing it could be compared with', () => {
+    // It states what a parameter does, and the archive holds no reading that
+    // either agrees with that or does not. A verdict here would be a
+    // comparison nobody made.
+    const [found] = reached(['41 06 24']);
+    expect(found).not.toHaveProperty('range');
+    expect(found).not.toHaveProperty('initial');
+    expect(found).not.toHaveProperty('verdict');
+  });
+
+  it('is left out where the unit has none of the addresses it names', () => {
+    // Not shown against nothing: saying the document states this and the
+    // archive reached none of it needs a page listing the document's tables,
+    // which the block-shaped one is not.
+    expect(reached(['40 11 0A'])).toEqual([]);
   });
 });

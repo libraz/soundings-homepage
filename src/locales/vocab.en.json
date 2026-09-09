@@ -96,7 +96,7 @@
       "full": "differs from power-on afterwards"
     },
     "-": {
-      "short": "not asked",
+      "short": "not marked",
       "full": "not marked, so this reset was not asked about it"
     }
   },

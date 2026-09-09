@@ -96,11 +96,25 @@ export function aggregateUnit(unit, legend) {
   const regionByStart = new Map(regions.map((region) => [region.start, region]));
 
   // --- boundary: does a region stop where the map says it does? ----------
+  //
+  // Where it does not, the record holds the addresses past the end and what each
+  // of them answered. Keeping only the count said twelve addresses answered and
+  // then gave a reader nowhere to see any of them — and a later run took a hold
+  // verdict over exactly those twelve, which had nothing to attach to.
   const boundary = unit.load('boundary/whole-map.json');
   if (boundary) {
     for (const region of boundary.regions) {
       const target = regionByStart.get(region.address);
       if (target) target.beyond = region.answered_beyond_the_mapped_end ?? 0;
+      const past = region.first_address_past_the_end;
+      if (!past) continue;
+      expandRegion(past, region.values?.length ?? 0).forEach((address, offset) => {
+        if (addresses.has(address)) return;
+        // No region and no offset within one: it is past the end of the region
+        // that reached it, which is the whole of what is known about where it
+        // sits. `x` is what the offsets stage marks the same kind of address.
+        addresses.set(address, { a: address, g: null, o: null, s: region.values[offset], x: true });
+      });
     }
   }
 
@@ -124,32 +138,80 @@ export function aggregateUnit(unit, legend) {
   }
 
   // --- write-probe: what an address accepts ------------------------------
-  const writeProbe = unit.load('write-probe/whole-map.json');
-  if (writeProbe) {
-    for (const region of writeProbe.regions) {
+  //
+  // The whole stage, not one file. The map-wide pass leaves addresses unasked —
+  // it stops at a region's mapped length, and a follow-up run is how the ones
+  // past it get asked at all. Reading only `whole-map.json` showed thirty-four
+  // addresses as never measured that a targeted run had measured and recorded,
+  // which is this site asserting an absence the archive does not hold.
+  //
+  // The map-wide pass goes first and the targeted runs after it, so a record
+  // about a few addresses is read as an addition to the one about all of them.
+  // Where two of them speak about the same address they have to say the same
+  // thing: none of the archive's records disagree today, and a disagreement is
+  // a finding for a person rather than something to settle by file order.
+  const writeProbes = unit.loadStage('write-probe');
+  const wholeMapFirst = [...writeProbes].sort(([a], [b]) =>
+    a === 'whole-map' ? -1 : b === 'whole-map' ? 1 : a.localeCompare(b),
+  );
+  for (const [name, writeProbe] of wholeMapFirst) {
+    const path = `write-probe/${name}.json`;
+    for (const region of writeProbe.regions ?? []) {
       const target = regionByStart.get(region.start);
       if (target) {
         target.restored = region.region_restored !== false;
         if (region.skipped?.length) target.skipped = region.skipped.length;
       }
       for (const byte of region.bytes ?? []) {
-        const record = addresses.get(byte.address);
-        if (!record) continue;
+        let record = addresses.get(byte.address);
+        if (!record) {
+          // An address the sweep never reached and a targeted run did. The
+          // sweep walks the regions it found and stops at their mapped length,
+          // so a family printed between two of them is simply never asked; the
+          // `offsets` stage already puts addresses here on the same footing.
+          // It has no swept value and no region, and says so — what it has is
+          // the run that reached it, named on the write probe itself.
+          if (name === 'whole-map') {
+            warnings.push(
+              `${unit.unitId}: the map-wide write probe names ${byte.address}, which the sweep ` +
+                'did not find. One of the two records is about a map the other does not have.',
+            );
+            continue;
+          }
+          record = { a: byte.address, g: null, o: null, s: null };
+          addresses.set(byte.address, record);
+        }
         vocab.add(byte.classification);
         const write = {
-          c: code('writeClass', byte.classification, 'write-probe/whole-map.json'),
+          c: code('writeClass', byte.classification, path),
           r: byte.range,
           n: byte.accepted?.length ?? 0,
           // The probe writes a ladder of values rather than all 128, so the
           // accepted count only means anything beside the number it tried.
           t: byte.wrote_read?.length ?? 0,
+          // Named only where it is not the map-wide pass. That record answers
+          // for 37,296 of the 37,330 addresses, and repeating its path on each
+          // of them costs a megabyte to say the same thing every time; the
+          // index carries it once and this overrides it for the thirty-four.
+          ...(name === 'whole-map' ? {} : { f: path }),
         };
         if (byte.accepted && !isContiguous(byte.accepted)) write.v = byte.accepted;
         if (byte.restored === false) write.k = false;
-        record.w = write;
+        const held = record.w;
+        if (held && (held.c !== write.c || held.r !== write.r)) {
+          warnings.push(
+            `${unit.unitId}: ${byte.address} is ${held.r} (${held.c}) in ` +
+              `${held.f ?? 'write-probe/whole-map.json'} and ${write.r} (${write.c}) in ` +
+              `${path}. The earlier record is shown; which of them is right is not something ` +
+              'file order can decide.',
+          );
+          continue;
+        }
+        record.w = held ?? write;
       }
     }
   }
+  const writeProbe = writeProbes.get('whole-map');
 
   // --- window-probe: blocks that are not storage but a view of another ---
   /** @type {any} */
@@ -171,14 +233,45 @@ export function aggregateUnit(unit, legend) {
   }
 
   // --- hold-probe: is a neighbour a different address? -------------------
-  const holdProbe = unit.load('hold-probe/whole-map.json');
-  if (holdProbe) {
-    for (const region of holdProbe.regions) {
+  //
+  // A stage, not a file. The map-wide pass asks each region as a whole, and a
+  // later run can ask a stretch inside one — twelve addresses starting part-way
+  // through a region is a verdict about those twelve and about nothing else, so
+  // it is put on them rather than on the region that contains them. Dropping
+  // what did not line up with a region start is how it went unshown until now.
+  for (const [name, holdProbe] of unit.loadStage('hold-probe')) {
+    const path = `hold-probe/${name}.json`;
+    for (const region of holdProbe.regions ?? []) {
       const target = regionByStart.get(region.start);
-      if (!target) continue;
       vocab.add(region.verdict);
-      target.hold = code('holdVerdict', region.verdict, 'hold-probe/whole-map.json');
-      target.alike = region.neighbouring_pairs_that_answered_alike ?? 0;
+      if (target && name === 'whole-map') {
+        target.hold = code('holdVerdict', region.verdict, path);
+        target.alike = region.neighbouring_pairs_that_answered_alike ?? 0;
+        continue;
+      }
+      // The record names the addresses it gave values to, so the run is taken
+      // from those rather than counted off its start — a skipped address is in
+      // `skipped` and never in `given`.
+      const asked = Object.keys(region.given ?? {});
+      const hold = {
+        v: code('holdVerdict', region.verdict, path),
+        a: region.neighbouring_pairs_that_answered_alike ?? 0,
+        l: asked.length,
+        s: region.start,
+        f: path,
+      };
+      for (const address of asked) {
+        const record = addresses.get(address);
+        if (!record) {
+          warnings.push(
+            `${unit.unitId}: ${path} asks ${address}, which no sweep or probe found. ` +
+              'A hold verdict is about the addresses it was taken over, and this is not one ' +
+              'of the addresses this unit is known to have.',
+          );
+          continue;
+        }
+        record.h = hold;
+      }
     }
   }
 
@@ -334,6 +427,9 @@ export function aggregateUnit(unit, legend) {
     addresses,
     resets,
     window,
+    // The record that answers for an address whose own `w` names none, so a
+    // range on a card can be traced without every address carrying the path.
+    probedBy: writeProbes.has('whole-map') ? 'write-probe/whole-map.json' : null,
     behaviours,
     spotChecks,
     stimuli: [...stimuli.values()].sort((a, b) => a.name.localeCompare(b.name)),

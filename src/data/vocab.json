@@ -40,5 +40,33 @@
   ],
   "qualifiers": [
     "balance"
+  ],
+  "documents": [
+    "It states a limit on an effect rather than a value, so nothing in the address records answers it. What would: the audible contrast the archive already measures, run on these addresses, which would show which of them a reader can hear and which they cannot.",
+    "It states what one message does to a table, which is a reset by another name and is the shape of thing the archive's reset probe measures. Nothing has put a drum set change to this unit and read these addresses back, so what the document states here stands beside no measurement at all.",
+    "The document states elsewhere on this page that selecting an insertion effect type sets that effect's parameters as a group. The initial value in this row is therefore what selecting a type leaves here, not what the unit powers up holding -- and the archive's own effect map records every one of the sixty-five types this unit accepted loading 40 into this address, which is the value stated.",
+    "The document states no single initial value for this address. It states one for the SC-8850, SC-88Pro and SC-88 maps, and another for the SC-55 map that depends on whether the part is the drum part.",
+    "The document states no single initial value for this address: it depends on the part number.",
+    "The document states that GS Reset leaves this at 00.",
+    "The document states that changing the drum set initialises every drum setup parameter.",
+    "The document states that modifying the LFO 1 and LFO 2 parameters may not always produce the intended effect.",
+    "The document states that one drum instrument cannot use chorus send and delay send at the same time.",
+    "The document states that receiving the value 00 here does what receiving GS Reset does.",
+    "The document states that this address names a map only while TONE MAP NUMBER is 00. What it does at any other value of that address the document does not say.",
+    "The document states that this is set off by GM1 System On and by GM2 System On, and on by GS Reset.",
+    "The document states that this is set off by GM1 System On, and on by GS Reset and by GM2 System On.",
+    "The document states that while this is off, a Bank Select LSB message is treated as though its value were 00 whatever it carries.",
+    "The note is printed at the end of the controller-assignment tables and names the LFO parameters rather than a table, so it is taken to reach every row in those tables whose parameter name is an LFO 1 or LFO 2 one -- all six controllers, across both pages the tables span, rather than only the block the note happens to sit under.",
+    "The note is printed under the drum setup table and names that table's parameters, so it is taken to reach every row of it.",
+    "The note names the two parameters, and the two rows carrying those names are the whole of what it reaches. It is about the pair rather than about either of them, which is why it is here rather than restated twice as a qualification.",
+    "The write probe writes one address at a time and reads it back, so it would find both of these accepting a value and say nothing about what happens when both hold one. What would answer it is an audible comparison with each set alone and with both set together.",
+    "a continuation address: the page states it as part of the row above and gives it no columns of its own",
+    "a continuation address: the page states only that the value is carried in nibbles",
+    "one of the twelve bytes of SCALE TUNING: the size is stated once, on the row for 40 1x 40",
+    "the initial value is stated conditionally on the part number, so no initial value is recorded here and the condition is stated in qualifications.json",
+    "the initial value is stated conditionally rather than as one value -- it depends on the tone map and on whether the part is the drum part -- so no initial value is recorded here and the condition is stated in qualifications.json",
+    "the second byte of PITCH FINE TUNE: the page states it as part of the row above and gives it no columns of its own",
+    "the second byte of PITCH OFFSET FINE: the page states only that the value is carried in nibbles",
+    "the second byte of TONE NUMBER: the page states no size for it, because the size is stated once on the row above"
   ]
 }

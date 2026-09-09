@@ -19,6 +19,11 @@
  * The third is the one worth having. `stated, not measured` is the strongest
  * thing this site says about a document, and an entry there that the archive
  * does hold would be the site inventing an absence.
+ *
+ * A note printed under a table is checked the same way and for one thing more:
+ * that it carries no verdict. It states behaviour rather than a value, so there
+ * is nothing it could agree or disagree with, and a verdict arriving on one
+ * would be a comparison nobody made.
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -37,6 +42,7 @@ function readJson(path) {
 const problems = [];
 let claimCount = 0;
 let absentCount = 0;
+let statementCount = 0;
 /** @type {Set<string>} */
 const verdicts = new Set();
 
@@ -57,6 +63,8 @@ for (const unitId of units) {
     continue;
   }
   const summary = readJson(summaryPath);
+  /** @type {Set<string>} */
+  const statementIds = new Set();
   const shards = readdirSync(claimsDir)
     .filter((name) => name.endsWith('.json'))
     .map((name) => name.slice(0, -'.json'.length))
@@ -106,6 +114,42 @@ for (const unitId of units) {
         );
       }
     }
+
+    for (const statement of shard.statements ?? []) {
+      statementIds.add(statement.id);
+      if (!cited.has(statement.d)) {
+        problems.push(
+          `${unitId}/${block}: ${statement.id} cites ${statement.d}, which the shard omits`,
+        );
+      }
+      if (statement.addresses.length === 0) {
+        problems.push(
+          `${unitId}/${block}: ${statement.id} is filed here and reaches nothing in it`,
+        );
+      }
+      for (const address of statement.addresses) {
+        if (!held.has(address)) {
+          problems.push(
+            `${unitId}/${block}: ${statement.id} names ${address}, which the block does not hold`,
+          );
+        }
+      }
+      if ('verdict' in statement || 'range' in statement || 'initial' in statement) {
+        problems.push(
+          `${unitId}/${block}: ${statement.id} carries a verdict. A note printed under a table ` +
+            'states behaviour, and the archive holds no reading that either agrees with it or ' +
+            'does not.',
+        );
+      }
+    }
+  }
+
+  statementCount += statementIds.size;
+  const summarised = new Set((summary.statements ?? []).map((statement) => statement.id));
+  for (const id of statementIds) {
+    if (!summarised.has(id)) {
+      problems.push(`${unitId}: block shards show ${id}, which claims.json does not list`);
+    }
   }
 }
 
@@ -114,11 +158,17 @@ const locales = readdirSync(localesDir)
   .map((name) => name.slice(0, -'.json'.length))
   .sort();
 
+// Both wordings, because both are shown. The sentence is what a legend and a
+// hover carry; the short form is what a table of nine thousand rows carries,
+// and a verdict with only the first of them reaches the comparison table as
+// its own bare key.
 for (const locale of locales) {
   const table = readJson(join(localesDir, `${locale}.json`));
   for (const verdict of [...verdicts].sort()) {
-    if (!table.claims?.verdict?.[verdict]) {
-      problems.push(`${locale}.json: claims.verdict is missing ${JSON.stringify(verdict)}`);
+    for (const bucket of ['verdict', 'verdictShort']) {
+      if (!table.claims?.[bucket]?.[verdict]) {
+        problems.push(`${locale}.json: claims.${bucket} is missing ${JSON.stringify(verdict)}`);
+      }
     }
   }
 }
@@ -131,5 +181,5 @@ if (problems.length > 0) {
 
 console.info(
   `claims: ${claimCount} joined, ${absentCount} stated and not measured, ` +
-    `${verdicts.size} verdicts translated in ${locales.join(', ')}`,
+    `${statementCount} table notes, ${verdicts.size} verdicts translated in ${locales.join(', ')}`,
 );

@@ -81,12 +81,12 @@
       ],
       "counts": {
         "regions": 854,
-        "addresses": 37507,
+        "addresses": 44661,
         "withPowerOn": 37502,
-        "withWriteProbe": 37296,
+        "withWriteProbe": 37330,
         "withAlias": 76,
         "audible": 139,
-        "notAudible": 420,
+        "notAudible": 422,
         "banks": 19,
         "blocks": 461
       },
@@ -610,7 +610,7 @@
         "51-19",
         "51-1F"
       ],
-      "archiveBytes": 48929427,
+      "archiveBytes": 50219346,
       "catalogues": {
         "tones": true,
         "effects": true

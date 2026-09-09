@@ -17,6 +17,9 @@ import { fileURLToPath } from 'node:url';
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const localesDir = join(siteRoot, 'src', 'locales');
 
+/** The language the archive and the document records are written in. */
+const DEFAULT_LOCALE = 'en';
+
 /** @param {string} path */
 function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
@@ -68,6 +71,29 @@ for (const locale of locales) {
 
   if (!table.under) problems.push(`vocab.${locale}.json: no "under" template`);
 
+  // Restatements of what a published document says. They are written in
+  // English in the document record, so the English locale is the record itself
+  // and needs no copy of them; every other locale does, or a document read
+  // after the last translation pass arrives on that locale's pages in a
+  // language the rest of the page is not in.
+  if (locale !== DEFAULT_LOCALE) {
+    for (const sentence of vocab.documents ?? []) {
+      if (!table.documents?.[sentence]) {
+        problems.push(
+          `vocab.${locale}.json: documents is missing ${JSON.stringify(sentence.slice(0, 60))}…`,
+        );
+      }
+    }
+    for (const sentence of Object.keys(table.documents ?? {})) {
+      if (!(vocab.documents ?? []).includes(sentence)) {
+        problems.push(
+          `vocab.${locale}.json: ${JSON.stringify(sentence.slice(0, 60))}… is no longer restated ` +
+            'by any document record',
+        );
+      }
+    }
+  }
+
   // A translation for a wording the archive no longer uses is dead weight that
   // outlives the record it came from, so it is reported rather than tolerated.
   for (const wording of Object.keys(table.verdicts ?? {})) {
@@ -85,5 +111,6 @@ if (problems.length > 0) {
 
 console.info(
   `vocab: ${vocab.verdicts.length} verdicts, ${vocab.qualifiers.length} qualifiers, ` +
-    `${vocab.stimuli.length} stimulus identifiers, covered in ${locales.join(', ')}`,
+    `${vocab.stimuli.length} stimulus identifiers, ` +
+    `${(vocab.documents ?? []).length} document restatements, covered in ${locales.join(', ')}`,
 );

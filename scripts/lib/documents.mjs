@@ -47,6 +47,7 @@ export class Documents {
       meta,
       addressMap: { ...parsed, rows: merged(parsed?.rows ?? [], byHand?.rows ?? [], id) },
       qualifications: read('qualifications.json'),
+      statements: read('statements.json'),
     };
   }
 }
@@ -260,28 +261,36 @@ export function claimsFor({ document, addresses, resets, blocks }) {
     const stated = asRange(row.data);
 
     const matched = [...addresses.keys()].filter((address) => covers(template, address));
-    if (matched.length === 0) {
-      // The document states this address and the archive holds no record of it.
-      // Said only where the row names one offset rather than a block of them:
-      // a row whose low byte is a letter states up to a hundred and twenty-eight
-      // addresses, and listing every one the archive lacks would fill the page
-      // with absences nobody asked about.
-      if (namesAnOffset(template) || isLiteral(template)) {
-        const low = template.replace(/#$/, '').slice(6, 8);
-        for (const block of blocks) {
-          if (!covers(template.slice(0, 5), block)) continue;
-          absent.push({
-            a: `${block} ${low}`,
-            t: template,
-            block,
-            page: row.page,
-            parameter: row.parameter ?? null,
-            data: row.data ?? null,
-            default: row.default ?? null,
-          });
-        }
+
+    // Where the archive holds no record of an address this row states.
+    //
+    // Asked block by block, not once for the whole row. A row whose middle byte
+    // is a letter states the same thing about sixteen parts, and the archive can
+    // hold four of them and not the other twelve -- which is exactly what
+    // happened the day a targeted write probe reached `40 2x 20` in four blocks.
+    // Answered for the row as a whole, those four measurements took the twelve
+    // remaining absences off the page with them.
+    //
+    // Said only where the row names one offset rather than a block of them: a
+    // row whose low byte is a letter states up to a hundred and twenty-eight
+    // addresses, and listing every one the archive lacks would fill the page
+    // with absences nobody asked about.
+    if (namesAnOffset(template) || isLiteral(template)) {
+      const low = template.replace(/#$/, '').slice(6, 8);
+      for (const block of blocks) {
+        if (!covers(template.slice(0, 5), block)) continue;
+        if (addresses.has(`${block} ${low}`)) continue;
+        absent.push({
+          a: `${block} ${low}`,
+          t: template,
+          block,
+          page: row.page,
+          parameter: row.parameter ?? null,
+          data: row.data ?? null,
+          default: row.default ?? null,
+          why: row.why ?? null,
+        });
       }
-      continue;
     }
 
     for (const address of matched) {
@@ -330,6 +339,12 @@ export function claimsFor({ document, addresses, resets, blocks }) {
         default: row.default ?? null,
         defaultDescription: row.default_description ?? null,
         unresolved: row.unresolved ?? null,
+        // Why a hand-read row has the columns it has. Most of these are the
+        // second byte of a parameter stated once on the line above, which the
+        // page gives no columns of its own — so without this they arrive as a
+        // row of dashes, which reads as a document that stated nothing rather
+        // than as one that stated it a line earlier.
+        why: row.why ?? null,
         bytes: sizeInBytes(row.size),
         range,
         initial,
@@ -349,6 +364,46 @@ export function claimsFor({ document, addresses, resets, blocks }) {
   claims.sort((a, b) => a.a.localeCompare(b.a));
   absent.sort((a, b) => a.a.localeCompare(b.a));
   return { claims, absent };
+}
+
+/**
+ * What the document states under a table rather than beside a row.
+ *
+ * These are not claims and never carry a verdict. A claim is a stated value
+ * against a measured one; a statement of this kind says what a parameter does or
+ * what a message leaves behind, and the archive holds no reading of the unit
+ * that either agrees with it or does not. Showing it with a verdict would be
+ * asserting a comparison nobody made — so what is carried instead is the
+ * addresses it reaches and what would have to be measured to answer it.
+ *
+ * @param {object} args
+ * @param {any} args.document as `Documents.load` returns it
+ * @param {Map<string, any>} args.addresses the unit's records, by address
+ */
+export function statementsFor({ document, addresses }) {
+  const held = [...addresses.keys()];
+  return (document.statements?.statements ?? []).flatMap((statement) => {
+    const reached = held.filter((address) =>
+      statement.covers.some((template) => covers(template, address)),
+    );
+    // A statement whose every address this unit lacks is about a table the
+    // archive did not reach. Saying so needs a page that lists the document's
+    // tables rather than the unit's blocks, so for now it is left out rather
+    // than shown against nothing.
+    if (reached.length === 0) return [];
+    return [
+      {
+        id: statement.id,
+        page: statement.page,
+        restated: statement.restated,
+        readAs: statement.read_as,
+        open: statement.open,
+        covers: statement.covers,
+        addresses: reached.sort(),
+        blocks: [...new Set(reached.map((address) => address.slice(0, 5)))].sort(),
+      },
+    ];
+  });
 }
 
 /** What the document is, for a citation beside every claim it produced. */

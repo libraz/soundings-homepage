@@ -79,6 +79,9 @@ for (const unit of units) {
       if (record.w && !(record.w.c in legend.writeClass)) {
         problems.push(`${unit.id} ${record.a}: write class ${record.w.c} is not in the legend`);
       }
+      if (record.h && !(record.h.v in legend.holdVerdict)) {
+        problems.push(`${unit.id} ${record.a}: hold code ${record.h.v} is not in the legend`);
+      }
       for (const entry of record.b ?? []) {
         if (!(entry.v in legend.audibleVerdict)) {
           problems.push(`${unit.id} ${record.a}: audible verdict ${entry.v} is not in the legend`);

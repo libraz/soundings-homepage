@@ -20,7 +20,7 @@ import { aggregateUnit } from './lib/aggregate.mjs';
 import { Archive } from './lib/archive.mjs';
 import { buildEffects, buildTones } from './lib/catalog.mjs';
 import { buildDevice } from './lib/device.mjs';
-import { cite, claimsFor, Documents } from './lib/documents.mjs';
+import { cite, claimsFor, DIFFERS, Documents, statementsFor } from './lib/documents.mjs';
 import { Emitter } from './lib/emit.mjs';
 import { classifyVocabulary } from './lib/vocab.mjs';
 
@@ -59,6 +59,9 @@ function main() {
   const units = [];
   /** @type {Set<string>} */
   const vocab = new Set();
+  /** Every sentence a document record restated, gathered as the units are read. */
+  /** @type {Set<string>} */
+  const documentProse = new Set();
   /** @type {string[]} */
   const warnings = [];
 
@@ -76,6 +79,7 @@ function main() {
       regions: aggregated.regions,
       window: aggregated.window,
       resets: aggregated.resets,
+      probedBy: aggregated.probedBy,
     });
 
     // One shard per two-byte block: every address it holds, fully joined.
@@ -107,12 +111,24 @@ function main() {
       unitId,
       warnings,
     });
+    for (const sentence of claims.prose) documentProse.add(sentence);
     for (const [key, held] of claims.byBlock) {
       emit.json(join(unitDir, 'claims', `${key}.json`), {
         unitId,
         block: key.replace('-', ' '),
         documents: claims.cited,
-        ...held,
+        claims: held.claims,
+        absent: held.absent,
+        // Only the part of a statement that reaches this block. The whole of it
+        // is on the unit's own document page; a block page showing every
+        // address a note reaches would list forty-seven other blocks' worth.
+        statements: claims.statements
+          .filter((statement) => statement.blocks.includes(key.replace('-', ' ')))
+          .map(({ addresses, blocks, covers, ...rest }) => ({
+            ...rest,
+            addresses: addresses.filter((address) => blockKey(address) === key),
+            blocks: blocks.length,
+          })),
       });
     }
     if (claims.cited.length > 0) {
@@ -121,6 +137,27 @@ function main() {
         documents: claims.cited,
         blocks: [...claims.byBlock.keys()].sort(),
         counts: claims.counts,
+        byBlock: claims.perBlock(),
+        // The absent rows as the document prints them: one entry per row of its
+        // table, naming the blocks it reaches. Nine hundred and sixty-one
+        // addresses are eighty-odd rows, and the row is the thing somebody would
+        // go and measure.
+        absentRows: claims.absentRows(),
+        // The blocks a note reaches and how many addresses that came to, not the
+        // addresses themselves: one of these covers 1,882 of them, which is a
+        // list nobody reads and thirty kilobytes on every load of the page.
+        statements: claims.statements.map(({ addresses, ...rest }) => ({
+          ...rest,
+          reached: addresses.length,
+        })),
+      });
+      // The whole comparison as one table, in a file of its own. It is a
+      // megabyte and the page above it is not, so it is fetched by the reader
+      // who asks to browse the comparison and by nobody else.
+      emit.json(join(unitDir, 'comparison.json'), {
+        unitId,
+        documents: claims.cited,
+        ...claims.comparison(),
       });
     }
 
@@ -168,6 +205,12 @@ function main() {
   emit.jsonPretty(join(dataDir, 'vocab.json'), {
     note: 'Every wording the archive used that the site has to show, sorted into the buckets the locale files are organised by. yarn check:vocab fails when one of these has no translation in src/locales/vocab.*.json.',
     ...classifyVocabulary(vocab, legend),
+    // Restatements of what a published document says. Unlike the verdicts these
+    // are the project's own prose rather than a measurement's, so they translate
+    // freely -- but they reach a page the same way, and a document read after
+    // the last translation pass would otherwise arrive on the Japanese site in
+    // English with nothing to say it had been missed.
+    documents: [...documentProse].sort(),
   });
 
   copyDocs(archive, emit);
@@ -193,8 +236,22 @@ function collectClaims({ documents, aggregated, blocks, unitId, warnings }) {
   const byBlock = new Map();
   /** @type {any[]} */
   const cited = [];
-  /** @type {Record<string, number>} */
-  const counts = {};
+  /** @type {any[]} */
+  const statements = [];
+  // Every sentence these records restate, so a document read after the last
+  // translation pass fails a check rather than arriving on a page in English.
+  /** @type {Set<string>} */
+  const prose = new Set();
+  // Kept by facet rather than as one tally. A claim is compared twice — on the
+  // range the document states and on the initial value it states — and the two
+  // fail in different ways: a range can be unstated where the initial value is
+  // printed, and a two-byte parameter is incomparable on both for the same
+  // reason. Summed together they read as twice as many claims, each with a
+  // verdict nobody can trace back to a column.
+  /** @type {Record<string, Record<string, number>>} */
+  const counts = { range: {}, initial: {}, resets: {} };
+  let absentTotal = 0;
+  let claimTotal = 0;
 
   for (const id of aggregated.meta.documents ?? []) {
     if (!documents.has(id)) {
@@ -209,19 +266,32 @@ function collectClaims({ documents, aggregated, blocks, unitId, warnings }) {
       resets: aggregated.resets,
       blocks,
     });
+    for (const note of document.qualifications?.qualifications ?? []) prose.add(note.restated);
+    for (const statement of statementsFor({ document, addresses: aggregated.addresses })) {
+      statements.push({ ...statement, d: id });
+      for (const sentence of [statement.restated, statement.readAs, statement.open]) {
+        prose.add(sentence);
+      }
+    }
     const into = (key) => {
       if (!byBlock.has(key)) byBlock.set(key, { claims: [], absent: [] });
       return byBlock.get(key);
     };
+    const tally = (facet, verdict) => {
+      counts[facet][verdict] = (counts[facet][verdict] ?? 0) + 1;
+    };
     for (const claim of claims) {
       into(blockKey(claim.a)).claims.push({ ...claim, d: id });
-      for (const facet of [claim.range, claim.initial]) {
-        counts[facet] = (counts[facet] ?? 0) + 1;
-      }
+      if (claim.why) prose.add(claim.why);
+      claimTotal += 1;
+      tally('range', claim.range);
+      tally('initial', claim.initial);
+      for (const reset of claim.q?.resets ?? []) tally('resets', reset.verdict);
     }
     for (const row of absent) {
       into(blockKey(row.a)).absent.push({ ...row, d: id });
-      counts['stated, not measured'] = (counts['stated, not measured'] ?? 0) + 1;
+      if (row.why) prose.add(row.why);
+      absentTotal += 1;
     }
   }
 
@@ -229,7 +299,112 @@ function collectClaims({ documents, aggregated, blocks, unitId, warnings }) {
     held.claims.sort((a, b) => a.a.localeCompare(b.a));
     held.absent.sort((a, b) => a.a.localeCompare(b.a));
   }
-  return { byBlock, cited, counts };
+
+  /** One line per block a document reaches, for the coverage strip. */
+  const perBlock = () =>
+    [...byBlock.entries()]
+      .map(([key, held]) => ({
+        b: key,
+        claims: held.claims.length,
+        absent: held.absent.length,
+        differs: held.claims.filter((claim) => claim.range === DIFFERS || claim.initial === DIFFERS)
+          .length,
+      }))
+      .sort((a, b) => a.b.localeCompare(b.b));
+
+  /**
+   * Every joined claim as one flat table, for reading the comparison from
+   * above.
+   *
+   * The block shards hold the same rows and are the right shape for a page
+   * about one block; they are the wrong shape for the question "where do the
+   * two sides disagree", which is asked of the whole unit at once and would
+   * otherwise mean opening a hundred and twenty-one files. So the join is
+   * written out once more, flat.
+   *
+   * Rows are arrays under a declared `columns`, not objects. Nine thousand
+   * claims written as objects is two and a half megabytes of repeated key
+   * names in a file that is committed; as arrays it is half that, and the
+   * header says what each position is, so the file still reads as a record
+   * rather than as a blob.
+   *
+   * Nothing here is derived beyond what the shards already say. The verdicts
+   * are the ones `claimsFor` reached, carried across unchanged: a table that
+   * recomputed them could disagree with the card the reader opens next.
+   */
+  const comparison = () => {
+    const columns = [
+      'a',
+      't',
+      'parameter',
+      'd',
+      'page',
+      'stated',
+      'measured',
+      'range',
+      'statedInitial',
+      'poweredOn',
+      'initial',
+    ];
+    /** @type {any[][]} */
+    const rows = [];
+    for (const held of byBlock.values()) {
+      for (const claim of held.claims) {
+        rows.push([
+          claim.a,
+          claim.t,
+          claim.parameter,
+          claim.d,
+          claim.page,
+          claim.data,
+          claim.measuredRange,
+          claim.range,
+          claim.default,
+          claim.poweredOn,
+          claim.initial,
+        ]);
+      }
+    }
+    rows.sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+    return { columns, rows };
+  };
+
+  /** The absent addresses regrouped into the document rows that stated them. */
+  const absentRows = () => {
+    /** @type {Map<string, any>} */
+    const rows = new Map();
+    for (const held of byBlock.values()) {
+      for (const entry of held.absent) {
+        const key = `${entry.d} ${entry.page} ${entry.t}`;
+        if (!rows.has(key)) {
+          rows.set(key, {
+            t: entry.t,
+            d: entry.d,
+            page: entry.page,
+            parameter: entry.parameter,
+            data: entry.data,
+            default: entry.default,
+            why: entry.why,
+            blocks: [],
+          });
+        }
+        rows.get(key).blocks.push(entry.block);
+      }
+    }
+    for (const row of rows.values()) row.blocks.sort();
+    return [...rows.values()].sort((a, b) => a.t.localeCompare(b.t) || a.page - b.page);
+  };
+
+  return {
+    byBlock,
+    cited,
+    statements,
+    prose,
+    counts: { ...counts, claims: claimTotal, absent: absentTotal },
+    perBlock,
+    absentRows,
+    comparison,
+  };
 }
 
 /**
