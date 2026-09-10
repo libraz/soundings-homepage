@@ -70,10 +70,41 @@ for (const path of all) {
   }
 }
 
+/**
+ * Every term the interface defines has an entry to send a reader to.
+ *
+ * `Term` links a label to `/docs/glossary#<name>`, and an anchor that is not
+ * there fails silently: the page loads and stays at the top, which reads as a
+ * link that did nothing rather than as a link that is broken. The anchors are
+ * written explicitly in the glossary — a heading in Japanese slugifies to a
+ * Japanese anchor, so a derived one could not serve both locales — and that is
+ * exactly the kind of pairing that comes apart when a term is added to one side.
+ */
+const GLOSSARIES = ['docs/glossary.md', 'ja/docs/glossary.md'];
+
+const terms = Object.keys(
+  JSON.parse(readFileSync(join(srcDir, 'locales', 'en.json'), 'utf8')).terms,
+);
+
+for (const glossary of GLOSSARIES) {
+  const text = readFileSync(join(srcDir, glossary), 'utf8');
+  const anchors = new Set([...text.matchAll(/^##\s.*\{#([^}]+)\}\s*$/gm)].map((match) => match[1]));
+  for (const term of terms) {
+    if (!anchors.has(term)) problems.push(`src/${glossary}: no {#${term}} for terms.${term}`);
+  }
+  for (const anchor of anchors) {
+    if (!terms.includes(anchor))
+      problems.push(`src/${glossary}: {#${anchor}} has no terms.${anchor} to define it`);
+  }
+}
+
 if (problems.length > 0) {
   for (const problem of problems) console.error(problem);
   console.error(`\n${problems.length} broken link(s).`);
   process.exit(1);
 }
 
-console.info(`docs: ${checked} internal links across ${all.length} pages all resolve`);
+console.info(
+  `docs: ${checked} internal links across ${all.length} pages all resolve, ` +
+    `${terms.length} terms anchored in ${GLOSSARIES.length} glossaries`,
+);
