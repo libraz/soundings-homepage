@@ -118,11 +118,13 @@ function reachOf(blocks: string[]) {
     <p v-else-if="error" class="claims__status">{{ t('claims.noneRead') }}</p>
 
     <template v-else-if="data">
-      <!-- What kind of thing everything below is, before any of it is shown -->
-      <section class="rule sg-panel">
-        <p class="rule__body">{{ t('claims.rule') }}</p>
-      </section>
-
+      <!--
+        Which document, then what came of it, then what kind of claim any of it
+        is. The rule used to open the page, and a reader arriving to find out
+        whether the manual matches met a paragraph of epistemology before a
+        single figure. It is still here, in the one place it is actually needed
+        — under the verdicts it governs — rather than in front of them.
+      -->
       <section class="documents sg-panel">
         <h2 class="sg-label documents__title">{{ t('claims.read') }}</h2>
         <article v-for="document in data.documents" :key="document.id" class="document">
@@ -165,6 +167,11 @@ function reachOf(blocks: string[]) {
             </dl>
           </div>
         </div>
+
+        <details class="rule">
+          <summary class="rule__summary">{{ t('claims.ruleTitle') }}</summary>
+          <p class="rule__body">{{ t('claims.rule') }}</p>
+        </details>
       </section>
 
       <!--
@@ -302,15 +309,48 @@ function reachOf(blocks: string[]) {
   color: var(--color-text-tertiary);
 }
 
+/* Folded under the tallies it governs. Its own hairline rather than a panel of
+   its own: it belongs to the section above it, and a second panel here read as
+   a second finding. */
 .rule {
-  padding: var(--space-4) var(--space-5);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--sg-rule-soft);
+}
+
+.rule__summary {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--vp-c-brand-1);
+  cursor: pointer;
+  list-style: none;
+}
+
+.rule__summary::-webkit-details-marker {
+  display: none;
+}
+
+.rule__summary::before {
+  content: '+';
+  display: inline-block;
+  width: 1.2em;
+  font-size: 1.2em;
+  line-height: 1;
+  color: var(--color-text-tertiary);
+}
+
+.rule[open] > .rule__summary::before {
+  content: '−';
 }
 
 .rule__body {
-  margin: 0;
+  margin: var(--space-3) 0 0;
   max-width: var(--sg-measure-wide);
   font-family: var(--font-reading);
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   line-height: 1.75;
   color: var(--color-text-secondary);
 }

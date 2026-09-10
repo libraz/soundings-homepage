@@ -25,9 +25,12 @@
     "completingAUnit": "Completing a unit"
   },
   "landing": {
+    "what": "Every address of one sound module is read, written to, reset and listened to, one at a time, and only what came back is written down. Nothing is copied from a specification, and a question that was never put is left as a gap rather than filled in.",
+    "coverage": "{addresses} addresses answered a read. {powerOn} of them held a value at power-on. {listened} were listened to, and {heard} of those changed the sound.",
     "mapBody": "Every address the unit answered a read at: what it held at power-on, what values it took, whether its neighbours are separate addresses, and what each reset put back.",
     "cataloguesBody": "The bank and program combinations the unit actually moved to, and the insertion effect types it stored — with what each effect's parameters were heard to do.",
     "emulatorBody": "A model of the control surface driven by the measurements alone. It answers what was recorded, and says so when a question was never put.",
+    "observationsBody": "What the unit did that no address explains: a read of 256 bytes that stops it answering, a reply that runs on for 29 seconds. Each says how it was found and what it does not establish.",
     "caveat": "Every finding here belongs to one unit, measured on one path, on the day it was taken. It is not a statement about a model, a firmware revision, or anyone else's unit. Where a run never reached something, the page says so rather than filling the gap in.",
     "readingLink": "How to read the archive"
   },
@@ -39,6 +42,27 @@
     "blocks": "Blocks",
     "units": "Units"
   },
+  "terms": {
+    "address": "Three seven-bit bytes naming one byte of the unit's parameter space.",
+    "region": "A run of addresses the unit answered a single read at.",
+    "block": "The first two bytes of an address. The site shards its data by it.",
+    "bank": "The top byte of an address.",
+    "rq1-dt1": "The two Roland system-exclusive messages this archive uses: RQ1 asks for bytes, DT1 writes them.",
+    "sweep": "The stage that maps which addresses answer at all, and what they held when asked.",
+    "power-on-value": "What the address held immediately after a power cycle, before anything but a read was sent.",
+    "boundary": "The stage that reads past a region's mapped end, and on while anything still answers.",
+    "write-probe": "The stage that measures what an address accepts: a ladder of values written one at a time and read back.",
+    "hold-probe": "The stage that tells a store from a window, by giving a whole run different values before reading any of them back.",
+    "resets": "What each of the unit's resets put back, read against a mark written into every writable address first.",
+    "window": "A block with no storage of its own: reading or writing here reaches an address in another block instead.",
+    "alias": "A MIDI message measured to land in this address. It says where a value is kept, not that anything uses it.",
+    "stimulus": "A named note — program, pitch, velocity, hold time — used to ask whether a parameter changes the sound.",
+    "repeatability": "How closely two takes of one setting agree. Every audible verdict is read against it.",
+    "audible": "Two settings sounded different by more than the unit fails to repeat itself by. Not that it is useful.",
+    "superseded": "A verdict a later record replaced. Both are kept, and the superseded one is shown dimmed.",
+    "insertion-effect": "An effect placed in a part's signal path, selected by writing a two-byte type number.",
+    "map-select": "One of the alternative tone maps a bank-select LSB chooses between."
+  },
   "search": {
     "unit": "Unit",
     "address": "Address",
@@ -48,6 +72,8 @@
     "noMatch": "Nothing in this unit answers to that.",
     "noMatchHint": "The archive holds only what has been measured. An address absent here is one no run has reached, which is not the same as one the unit does not have.",
     "matches": "{count} matching",
+    "try": "Try",
+    "tryHint": "These are messages the archive measured landing in an address. Pick one to see where it went.",
     "recent": "Recent",
     "byMessage": "Reached by",
     "loading": "Reading the archive…"
@@ -57,7 +83,11 @@
     "region": "Region",
     "offset": "Offset {offset} of {size}",
     "powerOn": "Power-on value",
+    "powerOnAlso": "{value} when the space was asked in another shape",
     "sweepValue": "Value at the sweep",
+    "windowProbe": "Asked on its own",
+    "windowAgainst": "Measured against {stores}, and against nothing else",
+    "windowWriteReached": "A write through this address reached {address}",
     "accepts": "Accepts",
     "range": "Range",
     "acceptedOf": "{accepted} of the {tried} values written",
@@ -78,6 +108,8 @@
     "cannotBeAsked": "Could not be asked",
     "source": "Record",
     "openInArchive": "Open in the archive",
+    "alsoIn": "{count} more records establish the same thing",
+    "moreRecords": "+{count}",
     "windowShort": "no storage of its own",
     "notInARegion": "No sweep found a region here",
     "askedAsARun": "asked as a run of {length} from {start}"
@@ -97,8 +129,11 @@
     "block": "Block {block}",
     "backToMap": "All banks",
     "emptyBank": "No region in this bank has been measured yet.",
+    "jumpTo": "Jump to bank",
+    "windowBlocks": "{count} blocks of this unit hold nothing of their own",
     "grid": {
       "body": "One cell is one block, laid out at the byte it is addressed by: the column is its low nibble and the row its high one. The two grids are the same squares read twice — what the archive measured, and what a document states about the same place. A filled cell has something behind it and the fill says how much of the block that something covers; a hollow cell has nothing behind it, which is not the same as a block that answered nothing.",
+      "pick": "Select a cell to open the block behind it.",
       "measured": "Measured",
       "stated": "Stated in documents",
       "depth": "Addresses the archive holds",
@@ -134,7 +169,14 @@
     "totals": "{tones} tones in {banks} banks",
     "maps": "{count} map selects",
     "mapsNote": "A map select is another way of asking for this unit's tones, not another set of them: the same tone answers under more than one. The maps are counted separately below and are not added up.",
-    "identicalTo": "Answered identically to map select {n}"
+    "identicalTo": "Answered identically to map select {n}",
+    "find": "Is a combination there?",
+    "findHint": "The bank and program numbers as the tables below give them. Each map select is answered separately, because the same pair can be a different tone under each.",
+    "program": "Program",
+    "moved": "the part moved",
+    "didNotMove": "asked, and the part did not move",
+    "notSwept": "this bank was not asked for every program",
+    "noBank": "no bank of this number answered"
   },
   "effects": {
     "title": "Insertion effects",
@@ -169,9 +211,23 @@
     "unmeasured": "Not measured, so nothing is claimed",
     "log": "Log",
     "clear": "Clear",
-    "presets": "Messages"
+    "presets": "Messages",
+    "marked": "A marked message reaches something the observations page describes."
   },
   "unit": {
+    "lede": "One physical unit, measured on one path, on the days these runs were taken. What follows is how much of it has been reached, what was asked of it, what stood between it and the archive, and how the measuring itself checked out.",
+    "coverageLede": "How much of the address space each question was actually put to. The whole is every address that answered a read at all; a bar that stops short is a run that stopped, not a unit that ends there.",
+    "answeredARead": "Answered a read",
+    "heldAValue": "Held a value at power-on",
+    "wasAsked": "Asked what it accepts",
+    "reachedByAMessage": "Reached by a named MIDI message",
+    "wasListenedTo": "Listened to",
+    "ofListened": "{heard} of the {listened} listened to changed the sound. {notHeard} did not — which is a finding about the note it was asked with as much as about the address.",
+    "stagesLede": "Each is one command that produced records, and each puts a different question to the same unit. An underlined name has an entry in the glossary.",
+    "chainLede": "What stood between the instrument and the archive. A measurement is of a unit through a path, and the path is part of the finding.",
+    "healthLede": "What the chain was checked against while it ran. These are readings on the measuring, not on the unit.",
+    "observationsLede": "What the unit did that no address map would tell you. Each carries the method that established it and, in the same weight of type, what it does not establish — the limits are part of the finding rather than a footnote to it.",
+    "contents": "What was found",
     "identity": "Identity reply",
     "specifications": "Specifications",
     "claimed": "Claimed",
@@ -227,6 +283,7 @@
       "stated in words rather than as a value": "stated in words rather than as a value"
     },
     "title": "Against the documentation",
+    "ruleTitle": "How to read these verdicts",
     "rule": "Everything on this page is evidence that a page of a published document stated something. That is a different kind of claim from a measurement, and it is never treated as one: where the document is silent, or where nothing has been measured, the answer is that one side said nothing — never that they differ, and never that the missing side is zero.",
     "read": "What has been read",
     "pagesRead": "{read} of {pages} pages read",

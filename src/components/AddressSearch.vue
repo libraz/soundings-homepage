@@ -116,6 +116,36 @@ const aliasMatches = computed(() => {
   return rows;
 });
 
+/**
+ * A handful of the messages the archive measured, offered as a first move.
+ *
+ * A reader who already holds an address types it; a reader who does not has
+ * nothing to put in the box, and the placeholder is not a thing they can press.
+ * These are the vocabulary that reader does have — a control change, an NRPN —
+ * and pressing one lands on the address it was measured reaching, which is also
+ * the only way the message route gets discovered.
+ *
+ * Two per kind rather than the first five in the file: the archive lists its
+ * control changes together, so taking the head of the list offers five of the
+ * same thing and says nothing about the other routes into the same card.
+ */
+const EXAMPLE_KINDS = ['cc', 'nrpn', 'rpn'] as const;
+const EXAMPLES_PER_KIND = 2;
+
+const examples = computed(() => {
+  const rows: { stimulus: string; address: string }[] = [];
+  for (const kind of EXAMPLE_KINDS) {
+    const seen = new Set<string>();
+    for (const alias of aliasIndex.value?.aliases ?? []) {
+      if (alias.kind !== kind || seen.has(alias.stimulus)) continue;
+      seen.add(alias.stimulus);
+      rows.push({ stimulus: alias.stimulus, address: alias.address });
+      if (seen.size === EXAMPLES_PER_KIND) break;
+    }
+  }
+  return rows;
+});
+
 const hasQuery = computed(() => query.value.trim().length > 0);
 const nothingFound = computed(
   () =>
@@ -174,6 +204,26 @@ function submit() {
   if (first) choose(first.a);
 }
 
+/**
+ * The open card, in the address bar.
+ *
+ * An answer nobody can link to is an answer that has to be found again by
+ * whoever it is passed to. The data is sharded by block and fetched by the box,
+ * so an address is not a route of its own; the query parameter is what makes
+ * the same card come back without one.
+ */
+const ADDRESS_PARAM = 'a';
+
+function publish(address: string | null) {
+  const url = new URL(window.location.href);
+  if (address) url.searchParams.set(ADDRESS_PARAM, address);
+  else url.searchParams.delete(ADDRESS_PARAM);
+  // Replace rather than push: opening a card is reading the page it is on, not
+  // arriving at a new one, and a back button that walked six lookups before
+  // leaving the site is a back button that no longer means back.
+  window.history.replaceState(window.history.state, '', url);
+}
+
 onMounted(() => {
   try {
     const stored = localStorage.getItem(RECENT_KEY);
@@ -181,12 +231,17 @@ onMounted(() => {
   } catch {
     recent.value = [];
   }
+
+  const asked = new URL(window.location.href).searchParams.get(ADDRESS_PARAM);
+  if (asked) choose(asked);
 });
 
 // Editing the query after a card is open puts the reader back in the list.
 watch(query, (value) => {
   if (chosen.value && value !== chosen.value) chosen.value = null;
 });
+
+watch(chosen, (address) => publish(address));
 </script>
 
 <template>
@@ -234,6 +289,21 @@ watch(query, (value) => {
     </div>
 
     <p class="search__hint">{{ t('search.hint') }}</p>
+
+    <!-- A reader who arrived holding an address has already typed it; this is
+         for the one who did not, and it gives way to their own recent list as
+         soon as they have one. -->
+    <div v-if="examples.length && !hasQuery && !recent.length" class="examples">
+      <span class="sg-label">{{ t('search.try') }}</span>
+      <ul class="examples__list">
+        <li v-for="example in examples" :key="example.stimulus">
+          <button type="button" class="examples__item" @click="choose(example.address)">
+            {{ example.stimulus }}
+          </button>
+        </li>
+      </ul>
+      <p class="examples__hint">{{ t('search.tryHint') }}</p>
+    </div>
 
     <p v-if="loading && hasQuery" class="search__status">{{ t('search.loading') }}</p>
 
@@ -459,6 +529,53 @@ watch(query, (value) => {
 
 .search__card {
   margin-top: var(--space-5);
+}
+
+/* The chips are the message as the archive named it, so they are set in the
+   readout face; the label and the sentence around them are the interface
+   talking about them, and are not. */
+.examples {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--sg-rule-soft);
+}
+
+.examples__list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+}
+
+.examples__item {
+  padding: 0.28rem 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  color: var(--color-text-secondary);
+  background: none;
+  border: 1px solid var(--sg-rule);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+.examples__item:hover,
+.examples__item:focus-visible {
+  outline: none;
+  color: var(--vp-c-brand-1);
+  border-color: color-mix(in srgb, var(--vp-c-brand-1) 45%, transparent);
+  background: color-mix(in srgb, var(--vp-c-brand-1) 6%, transparent);
+}
+
+.examples__hint {
+  margin: var(--space-3) 0 0;
+  font-size: 0.75rem;
+  line-height: 1.7;
+  color: var(--color-text-tertiary);
 }
 
 .recent {

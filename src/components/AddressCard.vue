@@ -7,11 +7,18 @@ import type {
   Region,
   RegionIndex,
 } from '../composables/useArchive';
-import { audibleWording, holdWording, writeClassWording } from '../composables/useArchive';
+import {
+  audibleWording,
+  holdWording,
+  windowWording,
+  writeClassWording,
+} from '../composables/useArchive';
 import { useI18n } from '../composables/useI18n';
 import DocumentLink from './DocumentLink.vue';
 import RecordLink from './RecordLink.vue';
+import RecordLinks from './RecordLinks.vue';
 import StateChip from './StateChip.vue';
+import Term from './Term.vue';
 
 /**
  * Everything the archive holds about one address, on one card.
@@ -32,7 +39,7 @@ const props = defineProps<{
   documents?: CitedDocument[];
 }>();
 
-const { t, list, resetOutcome, stated, statedIsQuoted, stimulus, route } = useI18n();
+const { t, full, list, resetOutcome, stated, statedIsQuoted, stimulus, route } = useI18n();
 
 /** The verdicts a later record has not replaced. */
 const standing = computed(() => {
@@ -187,18 +194,49 @@ function verdictKind(verdict: string): string {
     <!-- What it holds, what it takes, and whether its neighbours are it -->
     <dl class="card__readouts">
       <div class="readout">
-        <dt class="sg-label">{{ t('address.powerOn') }}</dt>
-        <dd class="readout__value sg-readout">{{ record.p ?? '—' }}</dd>
+        <dt class="sg-label"><Term name="power-on-value">{{ t('address.powerOn') }}</Term></dt>
+        <dd class="readout__value">
+          <span class="sg-readout">{{ record.p ?? '—' }}</span>
+          <!-- Named only where the map-wide read is not among the reads that got
+               it: those addresses were reached by a later run and by nothing
+               else, the same distinction the write probe's own record draws. -->
+          <RecordLink v-if="record.pf" :unit-id="unitId" :path="record.pf" compact />
+          <!-- The stage asked the space in more than one shape, and two blocks
+               of this unit answer a region read and a single read differently.
+               Both readings were measured, so the other one is shown here
+               rather than the first being left to stand as the state. -->
+          <span v-for="other in record.pd ?? []" :key="other.f" class="readout__note">
+            {{ t('address.powerOnAlso', { value: other.v }) }}
+            <RecordLink :unit-id="unitId" :path="other.f" compact />
+          </span>
+        </dd>
+      </div>
+      <!-- Whether this one address holds anything, asked against two named
+           stores. The banner above says the same of a whole block where a
+           finding covers one; this is the address's own answer, and it carries
+           the pair it was measured against because it means nothing without. -->
+      <div v-if="record.wd" class="readout">
+        <dt class="sg-label">{{ t('address.windowProbe') }}</dt>
+        <dd class="readout__value">
+          <span class="readout__note">{{ full(windowWording(record.wd.v)) }}</span>
+          <span class="readout__note">
+            {{ t('address.windowAgainst', { stores: record.wd.s.join(' / ') }) }}
+          </span>
+          <span v-if="record.wd.w" class="readout__note">
+            {{ t('address.windowWriteReached', { address: record.wd.w }) }}
+          </span>
+          <RecordLink :unit-id="unitId" :path="record.wd.f" compact />
+        </dd>
       </div>
       <!-- What the read that found this address got back. A different fact from
            the power-on value and often the only one there is: an address past a
            region's mapped end was reached by one read and by nothing since. -->
       <div class="readout">
-        <dt class="sg-label">{{ t('address.sweepValue') }}</dt>
+        <dt class="sg-label"><Term name="sweep">{{ t('address.sweepValue') }}</Term></dt>
         <dd class="readout__value sg-readout">{{ record.s ?? '—' }}</dd>
       </div>
       <div class="readout">
-        <dt class="sg-label">{{ t('address.accepts') }}</dt>
+        <dt class="sg-label"><Term name="write-probe">{{ t('address.accepts') }}</Term></dt>
         <dd class="readout__value">
           <template v-if="record.w">
             <span class="sg-readout readout__range">{{ record.w.r }}</span>
@@ -216,7 +254,7 @@ function verdictKind(verdict: string): string {
         </dd>
       </div>
       <div class="readout">
-        <dt class="sg-label">{{ t('address.neighbours') }}</dt>
+        <dt class="sg-label"><Term name="hold-probe">{{ t('address.neighbours') }}</Term></dt>
         <dd class="readout__value">
           <!-- A run asked on its own answers for this address; the region's own
                verdict is about a different set of addresses and does not. -->
@@ -242,25 +280,19 @@ function verdictKind(verdict: string): string {
 
     <!-- Which MIDI message was measured to land here -->
     <section v-if="aliases.length" class="card__section">
-      <h3 class="sg-label">{{ t('address.reachedBy') }}</h3>
+      <h3 class="sg-label"><Term name="alias">{{ t('address.reachedBy') }}</Term></h3>
       <ul class="alias">
         <li v-for="alias in aliases" :key="`${alias.stimulus}-${alias.channel}`">
           <span class="alias__stimulus sg-readout">{{ alias.stimulus }}</span>
           <span v-if="alias.channel" class="alias__channel">ch{{ alias.channel }}</span>
-          <RecordLink
-            v-for="source in alias.sources"
-            :key="source"
-            :unit-id="unitId"
-            :path="source"
-            compact
-          />
+          <RecordLinks :unit-id="unitId" :paths="alias.sources" compact />
         </li>
       </ul>
     </section>
 
     <!-- What each reset put back -->
     <section v-if="hasResets" class="card__section">
-      <h3 class="sg-label">{{ t('address.resets') }}</h3>
+      <h3 class="sg-label"><Term name="resets">{{ t('address.resets') }}</Term></h3>
       <p v-if="!resets.length" class="card__absent">{{ t('address.notMeasuredBody') }}</p>
       <ul v-else class="resets">
         <li v-for="reset in resets" :key="reset.name">
@@ -275,7 +307,7 @@ function verdictKind(verdict: string): string {
 
     <!-- Whether it changed what the unit sounded like -->
     <section class="card__section">
-      <h3 class="sg-label">{{ t('address.heard') }}</h3>
+      <h3 class="sg-label"><Term name="audible">{{ t('address.heard') }}</Term></h3>
       <p v-if="!record.b?.length && !record.nb" class="card__absent">
         {{ t('address.notMeasuredBody') }}
       </p>

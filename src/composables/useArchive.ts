@@ -56,6 +56,11 @@ export function holdWording(code: string): string {
   return (legend.holdVerdict as Record<string, string>)[code] ?? code;
 }
 
+/** @param code a `windowVerdict` code (`W`, `O`) */
+export function windowWording(code: string): string {
+  return (legend.windowVerdict as Record<string, string>)[code] ?? code;
+}
+
 /** @param code an `oversizeBehaviour` code */
 export function oversizeWording(code: string): string {
   return (legend.oversizeBehaviour as Record<string, string>)[code] ?? code;
@@ -163,6 +168,28 @@ export interface AddressRecord {
   s: string | null;
   /** value immediately after a power cycle */
   p?: string;
+  /**
+   * The record `p` came from, named only where the map-wide pass is not among
+   * the reads that got it — the same rule the write probe's `f` follows.
+   */
+  pf?: string;
+  /**
+   * What another read of the same address got back instead.
+   *
+   * The power-on stage asked the space in more than one shape — whole regions,
+   * the addresses a read can reach, one address at a time — and two blocks of
+   * this unit answer a region read and a single read differently. Both readings
+   * are measured, so both are kept and neither is presented as the state.
+   */
+  pd?: { v: string; f: string }[];
+  /**
+   * Whether this one address holds a value or is a view onto another.
+   *
+   * `s` are the two addresses the verdict was measured against and `w` is the
+   * one a write through this address reached, which need not be the one a read
+   * reports. A verdict here is relative to that pair and to nothing else.
+   */
+  wd?: { v: string; s: string[]; w: string | null; f: string };
   /** reached only by a single-byte read past a region's end */
   x?: boolean;
   /**

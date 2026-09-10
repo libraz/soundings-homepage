@@ -258,6 +258,13 @@ function citationLabel(citation: Citation): string {
               {{ preset.label }}
             </button>
           </div>
+          <!-- The mark meant something and said so nowhere: a reader met a row
+               of chips of which five were picked out and had no way to find out
+               what by. -->
+          <p v-if="presets.some((preset) => preset.note)" class="presets__key">
+            {{ t('emulator.marked') }}
+            <a :href="route(`/units/${unitId}/observations`)">{{ t('nav.observations') }}</a>
+          </p>
         </div>
       </div>
 
@@ -484,16 +491,41 @@ button:disabled {
   flex-wrap: wrap;
 }
 
-/* A preset that leads somewhere the archive has a recorded surprise is marked,
-   because those are the ones worth pressing first. */
+.presets__key {
+  margin: var(--space-3) 0 0;
+  font-family: var(--font-reading);
+  font-size: 0.75rem;
+  line-height: 1.7;
+  color: var(--color-text-tertiary);
+}
+
+.presets__key a {
+  color: var(--vp-c-brand-1);
+  text-decoration: none;
+}
+
+.presets__key a:hover {
+  text-decoration: underline;
+}
+
+/* A preset that leads somewhere the archive recorded a behaviour for is marked,
+   because those are the ones worth pressing first.
+
+   In ink, not in `--sg-heard`. That token means one thing — a parameter reached
+   the signal path — and "there is a recorded behaviour behind this message" is
+   not it. Borrowing it here made amber say two things on one site, which is the
+   one thing the four are for. The mark is the readout's own colour at full
+   strength against neighbours that are not, the way a differing claim is set
+   apart on the address card. */
 .preset--quirk {
-  border-color: color-mix(in srgb, var(--sg-heard) 40%, transparent);
-  color: var(--sg-heard);
+  border-color: color-mix(in srgb, var(--sg-readout) 45%, transparent);
+  color: var(--color-text-primary);
+  font-weight: 500;
 }
 
 .preset--quirk:hover {
-  border-color: var(--sg-heard);
-  color: var(--sg-heard);
+  border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
 }
 
 .log {

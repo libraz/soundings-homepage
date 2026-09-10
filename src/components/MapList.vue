@@ -186,24 +186,13 @@ const blockNoun = computed(() => t('map.block', { block: '' }).trim());
     <p v-else-if="error" class="map__status">{{ t('common.loadFailed') }}</p>
 
     <template v-else-if="data">
-      <!-- Stated once, at the top: twelve of the nineteen banks are the same
-           window, and repeating it on each of them would drown the map. -->
-      <p v-if="data.window" class="map__window">
-        <strong>{{ t('address.window') }}</strong>
-        {{
-          t('address.windowBody', {
-            blocks: data.window.blocks.join(', '),
-            onto: data.window.onto.join(' / '),
-          })
-        }}
-      </p>
-
       <p v-if="banks.length === 0" class="map__status">{{ t('map.emptyBank') }}</p>
 
       <!-- Said once, above every bank: the grid below is the same picture
            nineteen times, and a legend repeated on each of them is wallpaper. -->
       <div v-if="banks.length" class="key">
         <p class="key__body">{{ t('map.grid.body') }}</p>
+        <p class="key__pick">{{ t('map.grid.pick') }}</p>
         <div class="key__groups">
           <div class="key__group">
             <p class="sg-label">{{ t('map.grid.measured') }}</p>
@@ -258,7 +247,51 @@ const blockNoun = computed(() => t('map.block', { block: '' }).trim());
         </div>
       </div>
 
-      <section v-for="bank in banks" :key="bank.bank" class="bank sg-panel">
+      <!--
+        Below the legend, not above it: this is an exception, and an exception
+        shown before a reader knows what a block is asks them to hold something
+        they cannot place yet. Folded, because it is twelve blocks of four
+        hundred and sixty-one — the banks it applies to carry their own mark, so
+        anyone who meets one has a way back to this.
+
+        The heading is the unit's, not an address's. `address.window` is written
+        in the singular for one block and read as a statement about the block
+        the reader is on; here it stood above a list of twelve.
+      -->
+      <details v-if="data.window" class="window">
+        <summary class="window__summary">
+          {{ t('map.windowBlocks', { count: data.window.blocks.length }) }}
+        </summary>
+        <p class="window__body">
+          {{
+            t('address.windowBody', {
+              blocks: data.window.blocks.join(', '),
+              onto: data.window.onto.join(' / '),
+            })
+          }}
+        </p>
+      </details>
+
+      <!--
+        Nineteen banks stack to six thousand pixels, so the page needs a way to
+        move that is not scrolling. Byte order rather than size: it is the order
+        the banks are already in, and the order an address is read in.
+      -->
+      <nav v-if="banks.length > 1" class="jump" :aria-label="t('map.jumpTo')">
+        <span class="sg-label">{{ t('map.jumpTo') }}</span>
+        <ul class="jump__list">
+          <li v-for="bank in banks" :key="bank.bank">
+            <a class="jump__item sg-readout" :href="`#bank-${bank.bank}`">{{ bank.bank }}</a>
+          </li>
+        </ul>
+      </nav>
+
+      <section
+        v-for="bank in banks"
+        :id="`bank-${bank.bank}`"
+        :key="bank.bank"
+        class="bank sg-panel"
+      >
         <header class="bank__head">
           <h3 class="bank__byte sg-readout">{{ bank.bank }}</h3>
           <p class="bank__counts">
@@ -363,23 +396,99 @@ const blockNoun = computed(() => t('map.block', { block: '' }).trim());
 }
 
 /* A full border plus a tint, never a one-sided stripe on a rounded box. */
-.map__window {
-  margin: 0 0 var(--space-6);
-  padding: var(--space-3) var(--space-4);
+.window {
+  margin: 0 0 var(--space-5);
+  padding: var(--space-2) var(--space-4);
   border: 1px solid color-mix(in srgb, var(--sg-refused) 28%, transparent);
   background: color-mix(in srgb, var(--sg-refused) 8%, transparent);
   border-radius: var(--radius-sm);
+  max-width: var(--sg-measure-wide);
+}
+
+/* The reading surface gives a `summary` a margin of its own, which inside a box
+   this size is most of the box. */
+.window__summary {
+  margin: 0;
+  padding: var(--space-2) 0;
   font-family: var(--font-reading);
   font-size: 0.85rem;
-  line-height: 1.65;
-  max-width: var(--sg-measure-wide);
+  font-weight: 500;
+  color: var(--sg-refused);
+  cursor: pointer;
+  list-style: none;
+}
+
+.window__summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Drawn rather than left to the platform's triangle, so it is the size of the
+   label beside it — the same mark the bank tables' disclosure carries. */
+.window__summary::before {
+  content: '+';
+  display: inline-block;
+  width: 1em;
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+.window[open] > .window__summary::before {
+  content: '−';
+}
+
+.window__body {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-reading);
+  font-size: 0.85rem;
+  line-height: 1.7;
   color: var(--color-text-secondary);
 }
 
-.map__window strong {
+/* Byte, byte, byte across the page. Set in the readout face because that is
+   what a bank is — a byte the unit answers at, not a section title. */
+.jump {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: 0 0 var(--space-5);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--sg-rule-soft);
+}
+
+.jump__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.jump__item {
   display: block;
-  margin-bottom: 0.2rem;
-  color: var(--sg-refused);
+  padding: 0.15rem 0.45rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--sg-rule-soft);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  transition: border-color var(--transition-fast), color var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+.jump__item:hover,
+.jump__item:focus-visible {
+  outline: none;
+  color: var(--vp-c-brand-1);
+  border-color: color-mix(in srgb, var(--vp-c-brand-1) 45%, transparent);
+  background: color-mix(in srgb, var(--vp-c-brand-1) 6%, transparent);
+}
+
+/* The bank a jump landed on, clear of the sticky nav above it. */
+.bank {
+  scroll-margin-top: 5rem;
 }
 
 /* The legend, once, above the nineteen grids it explains. */
@@ -388,12 +497,21 @@ const blockNoun = computed(() => t('map.block', { block: '' }).trim());
 }
 
 .key__body {
-  margin: 0 0 var(--space-3);
+  margin: 0 0 var(--space-2);
   max-width: var(--sg-measure-wide);
   font-family: var(--font-reading);
   font-size: 0.8rem;
   line-height: 1.7;
   color: var(--color-text-secondary);
+}
+
+/* A cell is a link and nothing about it says so until it is hovered, which is
+   no use to a reader deciding whether the grid is worth reading at all. */
+.key__pick {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-reading);
+  font-size: 0.8rem;
+  color: var(--color-text-tertiary);
 }
 
 .bank + .bank {

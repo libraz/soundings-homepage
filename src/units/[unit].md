@@ -9,3 +9,5 @@ outline: false
 <!-- @content -->
 
 <AddressSearch :unit-id="$params.unit" compact />
+
+<UnitOverview :unit-id="$params.unit" />

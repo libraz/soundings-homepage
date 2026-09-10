@@ -24,13 +24,37 @@ const totals = computed(() => {
     addresses: sum((unit) => unit.counts.addresses),
     regions: sum((unit) => unit.counts.regions),
     audible: sum((unit) => unit.counts.audible),
+    powerOn: sum((unit) => unit.counts.withPowerOn),
+    // Every address a stimulus was put to, whichever way the verdict fell. The
+    // two are counted apart in the archive because they are different findings;
+    // here they are the denominator the one big number needs, and a page that
+    // prints 149 without it is printing a numerator on its own.
+    listened: sum((unit) => unit.counts.audible + unit.counts.notAudible),
     units: all.length,
   };
 });
 
+/** The four figures read back as a sentence, so none of them stands alone. */
+const coverage = computed(() =>
+  t('landing.coverage', {
+    addresses: totals.value.addresses.toLocaleString(),
+    powerOn: totals.value.powerOn.toLocaleString(),
+    listened: totals.value.listened.toLocaleString(),
+    heard: totals.value.audible.toLocaleString(),
+  }),
+);
+
 const primary = computed(() => all[0]);
 
-/** The three things the archive can be read as, each linking into it. */
+/**
+ * The four things the archive can be read as, each linking into it.
+ *
+ * Observations is one of them rather than a tab six along, because it is the
+ * only part of the archive that is already prose: a reader who has not yet
+ * learned what a region is can read that a 256-byte request stops the unit
+ * answering, and that is the shortest path from arriving to understanding what
+ * kind of thing this is.
+ */
 const entries = computed(() => [
   {
     key: 'map',
@@ -43,6 +67,12 @@ const entries = computed(() => [
     title: `${t('nav.tones')} / ${t('nav.effects')}`,
     href: route(`/units/${primary.value?.id}/tones`),
     body: t('landing.cataloguesBody'),
+  },
+  {
+    key: 'observations',
+    title: t('nav.observations'),
+    href: route(`/units/${primary.value?.id}/observations`),
+    body: t('landing.observationsBody'),
   },
   {
     key: 'emulator',
@@ -64,6 +94,14 @@ const entries = computed(() => [
       <div class="hero__inner">
         <h1 class="hero__title">soundings</h1>
         <p class="hero__lede">{{ t('site.lede') }}</p>
+
+        <!-- The line above is what the archive is for; this is what it is. A
+             reader who has not seen the site before cannot act on the first
+             without the second, and the box below asks them to act. -->
+        <p class="hero__what">{{ t('landing.what') }}</p>
+        <p class="hero__reading">
+          <a :href="route('/docs/')">{{ t('landing.readingLink') }}</a>
+        </p>
 
         <div class="hero__console sg-panel">
           <AddressSearch />
@@ -90,6 +128,10 @@ const entries = computed(() => [
           <dd class="sg-readout">{{ totals.units }}</dd>
         </div>
       </dl>
+      <!-- The readouts above are numerators. This is what each is out of, which
+           is the difference between "149 heard" meaning something and meaning
+           nothing at all. -->
+      <p class="strip__reading">{{ coverage }}</p>
     </section>
 
     <section class="entries">
@@ -170,6 +212,40 @@ const entries = computed(() => [
   color: var(--color-text-secondary);
 }
 
+/* Set below the lede rather than beside it: the two say different things about
+   the same archive, and side by side they read as one paragraph broken in the
+   wrong place. Narrower measure than the lede, because it is the longer of the
+   two and a line of this size wants fewer characters, not more. */
+.hero__what {
+  margin: var(--space-4) 0 0;
+  max-width: 38rem;
+  font-size: 0.9rem;
+  line-height: 1.8;
+  color: var(--color-text-tertiary);
+}
+
+.hero__reading {
+  margin: var(--space-3) 0 0;
+  font-size: 0.82rem;
+}
+
+.hero__reading a {
+  color: var(--vp-c-brand-1);
+  text-decoration: none;
+}
+
+/* The arrow is the affordance, not decoration: the link sits in a block of
+   prose the same colour as the sentence above it and needs to read as a place
+   to go rather than as a phrase that happens to be tinted. */
+.hero__reading a::after {
+  content: ' →';
+  transition: padding-left var(--transition-fast);
+}
+
+.hero__reading a:hover::after {
+  padding-left: 0.25em;
+}
+
 .hero__console {
   margin-top: var(--space-8);
   padding: var(--space-5) var(--space-6) var(--space-6);
@@ -186,7 +262,7 @@ const entries = computed(() => [
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
   gap: var(--space-5);
   margin: 0;
-  padding: var(--space-5) 0;
+  padding: var(--space-5) 0 0;
 }
 
 .strip__inner dd {
@@ -196,11 +272,35 @@ const entries = computed(() => [
   letter-spacing: 0.02em;
 }
 
+.strip__reading {
+  margin: 0;
+  padding: var(--space-4) 0 var(--space-5);
+  max-width: 46rem;
+  font-size: 0.82rem;
+  line-height: 1.8;
+  color: var(--color-text-tertiary);
+}
+
+/* Butt the panels together so the grid reads as one instrument face rather
+   than four floating cards; only the hovered one lifts out of the lattice.
+
+   The rule is the container showing through a 1px gap, not a border on each
+   cell. Four cells wrap to two rows on a narrow desktop, and cells that carry
+   their own border double it wherever two meet — the negative margin that hid
+   that for a single row put the seam in the wrong place as soon as there were
+   two. A gap is one line however the grid breaks. */
+/* Four columns, then two, then one — never three with a gap where the fourth
+   would be. `auto-fit` counts how many fit and stops there, which at a desktop
+   width just under the full measure is three, and the fourth card sat alone
+   against an empty plate. There are four entries and the number is fixed here,
+   so the breaks are too. */
 .entries {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-  gap: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
   margin-top: var(--space-10);
+  background: var(--sg-rule-soft);
+  border: 1px solid var(--sg-rule-soft);
 }
 
 .entry {
@@ -208,19 +308,15 @@ const entries = computed(() => [
   padding: var(--space-5) var(--space-5) var(--space-6);
   color: inherit;
   text-decoration: none;
-  border: 1px solid var(--sg-rule-soft);
-  transition: border-color var(--transition-default), background-color var(--transition-default);
+  background: var(--vp-c-bg);
+  transition: box-shadow var(--transition-default), background-color var(--transition-default);
 }
 
-/* Butt the panels together so the grid reads as one instrument face rather
-   than three floating cards; only the hovered one lifts out of the lattice. */
-.entries .entry + .entry {
-  margin-left: -1px;
-}
-
-.entry:hover {
-  border-color: color-mix(in srgb, var(--vp-c-brand-1) 45%, transparent);
-  background: color-mix(in srgb, var(--vp-c-brand-1) 5%, transparent);
+.entry:hover,
+.entry:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vp-c-brand-1) 45%, transparent);
+  background: color-mix(in srgb, var(--vp-c-brand-1) 5%, var(--vp-c-bg));
 }
 
 .entry__title {
@@ -238,6 +334,12 @@ const entries = computed(() => [
   font-size: 0.85rem;
   line-height: 1.7;
   color: var(--color-text-secondary);
+}
+
+@media (min-width: 60rem) {
+  .entries {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .units {
@@ -322,9 +424,8 @@ const entries = computed(() => [
   .hero__console {
     padding: var(--space-4);
   }
-  .entries .entry + .entry {
-    margin-left: 0;
-    margin-top: -1px;
+  .entries {
+    grid-template-columns: minmax(0, 1fr);
   }
   .units__list a {
     grid-template-columns: 1fr;

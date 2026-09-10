@@ -69,6 +69,25 @@ function simulated(id: string): boolean {
   return rules[id] !== undefined;
 }
 
+/**
+ * The first sentence of a finding, for the contents list.
+ *
+ * Thirty-six findings run to eighteen thousand pixels and the page had no way
+ * into itself; a reader looking for the one about resets had to scroll past
+ * thirty-five others to find out whether it was there. The opening sentence is
+ * the finding stated — the rest of the summary qualifies it — so it is what the
+ * list carries, in whichever language the summary came out in.
+ *
+ * Taken off the translated text rather than the record's own, because the list
+ * has to be readable in the language the page is being read in. A summary with
+ * no sentence break is used whole and clamped by the layout.
+ */
+function headline(summary: string): string {
+  const text = note(summary);
+  const stop = text.search(/。|\.(?=\s|$)/);
+  return stop === -1 ? text : text.slice(0, stop + 1);
+}
+
 const stimuli = computed(() => data.value?.stimuli ?? []);
 </script>
 
@@ -78,6 +97,17 @@ const stimuli = computed(() => data.value?.stimuli ?? []);
     <p v-else-if="error" class="observations__status">{{ t('common.loadFailed') }}</p>
 
     <template v-else-if="data">
+      <p class="observations__lede">{{ t('unit.observationsLede') }}</p>
+
+      <nav v-if="data.behaviours.length > 1" class="contents sg-panel" :aria-label="t('unit.contents')">
+        <h2 class="sg-label contents__title">{{ t('unit.contents') }}</h2>
+        <ol class="contents__list">
+          <li v-for="behaviour in data.behaviours" :key="behaviour.id">
+            <a class="contents__item" :href="`#${behaviour.id}`">{{ headline(behaviour.summary) }}</a>
+          </li>
+        </ol>
+      </nav>
+
       <article
         v-for="behaviour in data.behaviours"
         :id="behaviour.id"
@@ -219,8 +249,64 @@ const stimuli = computed(() => data.value?.stimuli ?? []);
   color: var(--color-text-tertiary);
 }
 
+.observations__lede {
+  margin: 0 0 var(--space-5);
+  max-width: var(--sg-measure-wide);
+  font-family: var(--font-reading);
+  font-size: 0.9rem;
+  line-height: 1.8;
+  color: var(--color-text-secondary);
+}
+
+.contents {
+  margin-bottom: var(--space-6);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+}
+
+.contents__title {
+  margin: 0 0 var(--space-3);
+  border: none;
+  padding: 0;
+}
+
+/* Two columns where there is room. Thirty-six single-line entries in one column
+   are a second page to scroll before reaching the first finding, which is the
+   problem this list exists to fix. */
+.contents__list {
+  columns: 2;
+  column-gap: var(--space-8);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.contents__list li {
+  break-inside: avoid;
+  margin: 0;
+}
+
+.contents__item {
+  display: block;
+  padding: 0.3rem 0;
+  font-family: var(--font-reading);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  border-bottom: 1px solid var(--sg-rule-soft);
+  transition: color var(--transition-fast);
+}
+
+.contents__item:hover,
+.contents__item:focus-visible {
+  outline: none;
+  color: var(--vp-c-brand-1);
+}
+
 .behaviour {
   padding: var(--space-5);
+  /* Clear of the sticky nav when a contents entry lands on it. */
+  scroll-margin-top: 5rem;
 }
 
 .behaviour + .behaviour {
@@ -438,6 +524,12 @@ const stimuli = computed(() => data.value?.stimuli ?? []);
 @media (max-width: 640px) {
   .behaviour {
     padding: var(--space-4);
+  }
+  .contents {
+    padding: var(--space-4);
+  }
+  .contents__list {
+    columns: 1;
   }
   .grid th,
   .grid td {

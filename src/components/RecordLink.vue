@@ -10,20 +10,37 @@ import { useI18n } from '../composables/useI18n';
  * range and every reply the emulator produces carries the path of the file that
  * established it, pointing at the archive rather than at a copy.
  */
-const props = defineProps<{
-  unitId: string;
-  /** A path inside the unit's directory, e.g. `block/40-11.json`. */
-  path: string;
-  /** Show only the file name rather than the whole path. */
-  compact?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    unitId: string;
+    /** A path inside the unit's directory, e.g. `block/40-11.json`. Empty for the unit itself. */
+    path?: string;
+    /** Show only the file name rather than the whole path. */
+    compact?: boolean;
+    /**
+     * Point at a directory rather than a file.
+     *
+     * A figure counted across every record a unit holds has no one file behind
+     * it, and naming an arbitrary one of them would cite a record that does not
+     * establish it. The directory is what does.
+     */
+    tree?: boolean;
+  }>(),
+  { path: '', compact: false, tree: false },
+);
 
 const { t } = useI18n();
 
-const href = computed(
-  () => `https://github.com/libraz/soundings/blob/main/data/units/${props.unitId}/${props.path}`,
-);
-const label = computed(() => (props.compact ? props.path.split('/').pop() : props.path));
+const href = computed(() => {
+  const kind = props.tree ? 'tree' : 'blob';
+  const within = props.path ? `/${props.path}` : '';
+  return `https://github.com/libraz/soundings/${kind}/main/data/units/${props.unitId}${within}`;
+});
+
+const label = computed(() => {
+  if (!props.path) return `${props.unitId}/`;
+  return props.compact ? props.path.split('/').pop() : props.path;
+});
 </script>
 
 <template>

@@ -12,10 +12,13 @@ import EmulatorConsole from '../../src/components/EmulatorConsole.vue';
 import LandingPage from '../../src/components/LandingPage.vue';
 import MapList from '../../src/components/MapList.vue';
 import RecordLink from '../../src/components/RecordLink.vue';
+import RecordLinks from '../../src/components/RecordLinks.vue';
 import StateChip from '../../src/components/StateChip.vue';
+import Term from '../../src/components/Term.vue';
 import ToneCatalog from '../../src/components/ToneCatalog.vue';
 import UnitHeader from '../../src/components/UnitHeader.vue';
 import UnitList from '../../src/components/UnitList.vue';
+import UnitOverview from '../../src/components/UnitOverview.vue';
 
 /**
  * Pages on this site are thin: a `.md` file carries frontmatter and one
@@ -37,9 +40,12 @@ export default {
     app.component('LandingPage', LandingPage);
     app.component('MapList', MapList);
     app.component('RecordLink', RecordLink);
+    app.component('RecordLinks', RecordLinks);
     app.component('StateChip', StateChip);
+    app.component('Term', Term);
     app.component('ToneCatalog', ToneCatalog);
     app.component('UnitHeader', UnitHeader);
+    app.component('UnitOverview', UnitOverview);
     app.component('UnitList', UnitList);
   },
 } satisfies Theme;
