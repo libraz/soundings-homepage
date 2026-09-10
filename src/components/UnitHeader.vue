@@ -251,9 +251,12 @@ const current = computed(() => props.active ?? 'unit');
   transition: color var(--transition-fast), background var(--transition-fast);
 }
 
+/* Hover says where the pointer is, and it is tinted with the page's own ink
+   rather than the brand: brand in this strip means "this is the page you are
+   on", and a hovered segment wearing it put two segments in that state at once. */
 .nav__item:hover {
-  color: var(--vp-c-brand-1);
-  background: color-mix(in srgb, var(--vp-c-brand-1) 6%, transparent);
+  color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--color-text-primary) 7%, transparent);
 }
 
 /* A full border and a tint rather than an edge stripe, so the selected segment
@@ -261,6 +264,13 @@ const current = computed(() => props.active ?? 'unit');
 .nav__item--current {
   border-color: color-mix(in srgb, var(--vp-c-brand-1) 28%, transparent);
   background: color-mix(in srgb, var(--vp-c-brand-1) 8%, transparent);
+  color: var(--vp-c-brand-1);
+}
+
+/* Stated again because the plain hover rule outranks the class on its own, and
+   left to it the segment marking the current page faded under the pointer. */
+.nav__item--current:hover {
+  background: color-mix(in srgb, var(--vp-c-brand-1) 14%, transparent);
   color: var(--vp-c-brand-1);
 }
 
