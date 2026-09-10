@@ -1,5 +1,5 @@
 {
-  "note": "判定語は、表やチップに出す短い形と、カード本文に出すアーカイブ自身の言い回しの全訳を持ちます。刺激名（struck、struck_vibrato など）は識別子なので、どのロケールでも翻訳しません。代わりに、その刺激で何が見えるかというアーカイブ自身の記述を添えます。",
+  "note": "判定語は、表やチップに出す短い形と、カード本文に出すアーカイブ自身の言い回しの全訳を持ちます。テスト音名（struck、struck_vibrato など）は識別子なので、どのロケールでも翻訳しません。代わりに、そのテスト音で何が見えるかというアーカイブ自身の記述を添えます。",
   "verdicts": {
     "accepts": {
       "short": "受理",
@@ -42,16 +42,16 @@
       "full": "応答したアドレスがここでは 1 つだけで、比較する相手がなかった"
     },
     "audible": {
-      "short": "可聴",
-      "full": "音の変化として聞き取れた"
+      "short": "変化あり",
+      "full": "音が変わって聞こえた"
     },
     "not audible under what was tried": {
-      "short": "不可聴",
-      "full": "試した範囲では聞き取れなかった"
+      "short": "変化なし",
+      "full": "試した範囲では音の変化を聞き取れなかった"
     },
     "not audible under the note asked": {
-      "short": "不可聴",
-      "full": "用いた音では聞き取れなかった"
+      "short": "変化なし",
+      "full": "用いたテスト音では音の変化を聞き取れなかった"
     },
     "could not be measured": {
       "short": "測定不能",
@@ -59,11 +59,11 @@
     },
     "started something that does not repeat": {
       "short": "非再現の変化",
-      "full": "再現しない何かを始めた"
+      "full": "再現しない変化を引き起こした"
     },
     "no yardstick under the note asked, so not asked": {
       "short": "基準なし",
-      "full": "用いた音では基準が取れなかったため、問わなかった"
+      "full": "用いたテスト音では基準が取れず、判定していない"
     },
     "static": {
       "short": "静止",
@@ -76,6 +76,14 @@
     "could not say": {
       "short": "判定不能",
       "full": "どちらとも言えなかった"
+    },
+    "a window onto whichever store was addressed last": {
+      "short": "窓",
+      "full": "直前にアドレス指定された格納先を映す窓"
+    },
+    "holds its own value": {
+      "short": "自前の値",
+      "full": "自身の値を保持する"
     }
   },
   "resetOutcome": {
@@ -85,19 +93,19 @@
     },
     "M": {
       "short": "保持",
-      "full": "リセット前に書き込んだ印をそのまま保持した"
+      "full": "リセット前に書き込んだ目印をそのまま保持した"
     },
     "N": {
       "short": "どちらとも異なる",
-      "full": "印とも電源投入直後の値とも異なる値に変わった"
+      "full": "目印とも電源投入直後の値とも異なる値に変わった"
     },
     "D": {
       "short": "差異あり",
       "full": "リセット後、電源投入直後の値と異なる"
     },
     "-": {
-      "short": "印を書けず",
-      "full": "印を書き込めなかったため、このリセットについては問うていない"
+      "short": "目印を書けず",
+      "full": "目印を書き込めなかったため、このリセットについては判定していない"
     }
   },
   "qualifiers": {
@@ -106,20 +114,20 @@
   "under": "{stimulus}（{setting} のもとで）",
   "notes": {
     "Every bank was asked for all 128 programs, so a bank absent here answered none of them.": "どのバンクも 128 プログラムすべてを問いました。したがって、ここに無いバンクは 1 つも応答しなかったバンクです。",
-    "Every type number was asked.": "すべてのタイプ番号を問いました。"
+    "Every type number was asked.": "すべてのタイプ番号を調べました。"
   },
   "documents": {
-    "The document states that modifying the LFO 1 and LFO 2 parameters may not always produce the intended effect.": "文書は、LFO 1 と LFO 2 のパラメーターを変更しても、意図した効果が常に得られるとは限らないと述べています。",
-    "The note is printed at the end of the controller-assignment tables and names the LFO parameters rather than a table, so it is taken to reach every row in those tables whose parameter name is an LFO 1 or LFO 2 one -- all six controllers, across both pages the tables span, rather than only the block the note happens to sit under.": "注記はコントローラー割り当ての表の末尾に印刷されており、表ではなく LFO のパラメーターを名指ししています。そのため、これらの表のうちパラメーター名が LFO 1 または LFO 2 であるすべての行に及ぶものとして読みました。注記が置かれた区画だけではなく、表がまたがる 2 ページ分、6 系統すべてのコントローラーが対象です。",
-    "It states a limit on an effect rather than a value, so nothing in the address records answers it. What would: the audible contrast the archive already measures, run on these addresses, which would show which of them a reader can hear and which they cannot.": "値ではなく効果の限界を述べているため、アドレスの記録には答えるものがありません。答えうるのは、アーカイブが既に行っている可聴差の測定をこれらのアドレスに対して実施することです。どのアドレスが聴き取れ、どれが聴き取れないかが示されます。",
-    "The document states that changing the drum set initialises every drum setup parameter.": "文書は、ドラムセットを変更するとドラムセットアップのパラメーターがすべて初期化されると述べています。",
-    "The note is printed under the drum setup table and names that table's parameters, so it is taken to reach every row of it.": "注記はドラムセットアップの表の下に印刷され、その表のパラメーターを名指ししているため、表のすべての行に及ぶものとして読みました。",
-    "It states what one message does to a table, which is a reset by another name and is the shape of thing the archive's reset probe measures. Nothing has put a drum set change to this unit and read these addresses back, so what the document states here stands beside no measurement at all.": "1 つのメッセージが表全体に何をするかを述べており、名前こそ違えリセットであって、アーカイブのリセット・プローブが測る形のものです。この機体にドラムセット変更を送ってこれらのアドレスを読み戻した測定はまだなく、ここでの文書の記載は、並ぶべき測定を持ちません。",
-    "The document states that one drum instrument cannot use chorus send and delay send at the same time.": "文書は、1 つのドラム音色がコーラス・センドとディレイ・センドを同時には使えないと述べています。",
-    "The note names the two parameters, and the two rows carrying those names are the whole of what it reaches. It is about the pair rather than about either of them, which is why it is here rather than restated twice as a qualification.": "注記は 2 つのパラメーターを名指ししており、その名を持つ 2 行が及ぶ範囲のすべてです。どちらか一方についてではなく組についての記載であり、そのため注記として 2 回言い直すのではなくここに置いています。",
-    "The write probe writes one address at a time and reads it back, so it would find both of these accepting a value and say nothing about what happens when both hold one. What would answer it is an audible comparison with each set alone and with both set together.": "ライト・プローブは 1 アドレスずつ書いて読み戻すため、どちらも値を受け付けることは分かっても、両方が値を保持したときに何が起きるかについては何も言いません。答えうるのは、片方だけを設定した場合と両方を設定した場合の可聴比較です。",
+    "The document states that modifying the LFO 1 and LFO 2 parameters may not always produce the intended effect.": "文書は、LFO 1 と LFO 2 のパラメータを変更しても、意図した効果が常に得られるとは限らないと述べています。",
+    "The note is printed at the end of the controller-assignment tables and names the LFO parameters rather than a table, so it is taken to reach every row in those tables whose parameter name is an LFO 1 or LFO 2 one -- all six controllers, across both pages the tables span, rather than only the block the note happens to sit under.": "注記はコントローラー割り当ての表の末尾に印刷されており、表ではなく LFO のパラメータを名指ししています。そのため、これらの表のうちパラメータ名が LFO 1 または LFO 2 であるすべての行に及ぶものとして読みました。注記が置かれた区画だけではなく、表がまたがる 2 ページ分、6 系統すべてのコントローラーが対象です。",
+    "It states a limit on an effect rather than a value, so nothing in the address records answers it. What would: the audible contrast the archive already measures, run on these addresses, which would show which of them a reader can hear and which they cannot.": "値ではなく効果の限界を述べているため、アドレスの記録には答えるものがありません。答えうるのは、アーカイブが既に行っている音の変化の測定をこれらのアドレスに対して実施することです。どのアドレスが聞き取れ、どれが聞き取れないかが示されます。",
+    "The document states that changing the drum set initialises every drum setup parameter.": "文書は、ドラムセットを変更するとドラムセットアップのパラメータがすべて初期化されると述べています。",
+    "The note is printed under the drum setup table and names that table's parameters, so it is taken to reach every row of it.": "注記はドラムセットアップの表の下に印刷され、その表のパラメータを名指ししているため、表のすべての行に及ぶものとして読みました。",
+    "It states what one message does to a table, which is a reset by another name and is the shape of thing the archive's reset probe measures. Nothing has put a drum set change to this unit and read these addresses back, so what the document states here stands beside no measurement at all.": "1 つのメッセージが表全体に何をするかを述べており、名前こそ違えリセットであって、アーカイブのリセットプローブが測る形のものです。この機体にドラムセット変更を送ってこれらのアドレスを読み戻した測定はまだなく、ここでの文書の記載は、並ぶべき測定を持ちません。",
+    "The document states that one drum instrument cannot use chorus send and delay send at the same time.": "文書は、1 つのドラム音色がコーラスセンドとディレイセンドを同時には使えないと述べています。",
+    "The note names the two parameters, and the two rows carrying those names are the whole of what it reaches. It is about the pair rather than about either of them, which is why it is here rather than restated twice as a qualification.": "注記は 2 つのパラメータを名指ししており、その名を持つ 2 行が及ぶ範囲のすべてです。どちらか一方についてではなく組についての記載であり、そのため注記として 2 回言い直すのではなくここに置いています。",
+    "The write probe writes one address at a time and reads it back, so it would find both of these accepting a value and say nothing about what happens when both hold one. What would answer it is an audible comparison with each set alone and with both set together.": "ライトプローブは 1 アドレスずつ書いて読み戻すため、どちらも値を受け付けることは分かっても、両方が値を保持したときに何が起きるかについては何も言いません。答えうるのは、片方だけを設定した場合と両方を設定した場合の音の変化の比較です。",
     "The document states that receiving the value 00 here does what receiving GS Reset does.": "文書は、ここで値 00 を受信すると GS Reset を受信したときと同じことが起きると述べています。",
-    "The document states elsewhere on this page that selecting an insertion effect type sets that effect's parameters as a group. The initial value in this row is therefore what selecting a type leaves here, not what the unit powers up holding -- and the archive's own effect map records every one of the sixty-five types this unit accepted loading 40 into this address, which is the value stated.": "文書は同じページの別の箇所で、インサーション・エフェクトのタイプを選ぶとそのエフェクトのパラメーターがまとめて設定されると述べています。したがってこの行の初期値は、タイプを選んだ結果ここに残る値であって、電源投入時に機体が保持している値ではありません。そしてアーカイブ自身のエフェクトマップには、この機体が受理した 65 タイプすべてがこのアドレスに 40 を読み込んだことが記録されています。記載されている値と同じです。",
+    "The document states elsewhere on this page that selecting an insertion effect type sets that effect's parameters as a group. The initial value in this row is therefore what selecting a type leaves here, not what the unit powers up holding -- and the archive's own effect map records every one of the sixty-five types this unit accepted loading 40 into this address, which is the value stated.": "文書は同じページの別の箇所で、インサーションエフェクトのタイプを選ぶとそのエフェクトのパラメータがまとめて設定されると述べています。したがってこの行の初期値は、タイプを選んだ結果ここに残る値であって、電源投入時に機体が保持している値ではありません。そしてアーカイブ自身のエフェクトマップには、この機体が受理した 65 タイプすべてがこのアドレスに 40 を読み込んだことが記録されています。記載されている値と同じです。",
     "The document states that this is set off by GM1 System On and by GM2 System On, and on by GS Reset.": "文書は、これが GM1 System On と GM2 System On でオフに、GS Reset でオンになると述べています。",
     "The document states no single initial value for this address. It states one for the SC-8850, SC-88Pro and SC-88 maps, and another for the SC-55 map that depends on whether the part is the drum part.": "文書はこのアドレスに単一の初期値を示していません。SC-8850・SC-88Pro・SC-88 の各マップには 1 つを、SC-55 マップにはドラムパートかどうかで変わるもう 1 つを示しています。",
     "The document states no single initial value for this address: it depends on the part number.": "文書はこのアドレスに単一の初期値を示していません。パート番号によって変わります。",
@@ -127,13 +135,13 @@
     "The document states that while this is off, a Bank Select LSB message is treated as though its value were 00 whatever it carries.": "文書は、これがオフの間、Bank Select LSB メッセージはどんな値を運んでいても値 00 として扱われると述べています。",
     "The document states that GS Reset leaves this at 00.": "文書は、GS Reset がこれを 00 にすると述べています。",
     "The document states that this address names a map only while TONE MAP NUMBER is 00. What it does at any other value of that address the document does not say.": "文書は、このアドレスがマップを指すのは TONE MAP NUMBER が 00 のあいだだけだと述べています。そのアドレスがそれ以外の値のときにこのアドレスが何をするのかは、文書に記載がありません。",
-    "a continuation address: the page states it as part of the row above and gives it no columns of its own": "継続アドレスです。誌面では上の行の一部として示されており、このアドレス自身の列は与えられていません。",
-    "a continuation address: the page states only that the value is carried in nibbles": "継続アドレスです。誌面には、値がニブルで運ばれることだけが示されています。",
+    "a continuation address: the page states it as part of the row above and gives it no columns of its own": "継続アドレスです。文書では上の行の一部として示されており、このアドレス自身の列は与えられていません。",
+    "a continuation address: the page states only that the value is carried in nibbles": "継続アドレスです。文書には、値がニブルで運ばれることだけが示されています。",
     "one of the twelve bytes of SCALE TUNING: the size is stated once, on the row for 40 1x 40": "SCALE TUNING の 12 バイトのうちの 1 つです。サイズは 40 1x 40 の行に一度だけ示されています。",
     "the initial value is stated conditionally on the part number, so no initial value is recorded here and the condition is stated in qualifications.json": "初期値はパート番号による条件付きで示されています。そのためここには初期値を記録せず、条件は qualifications.json に記しています。",
     "the initial value is stated conditionally rather than as one value -- it depends on the tone map and on whether the part is the drum part -- so no initial value is recorded here and the condition is stated in qualifications.json": "初期値は 1 つの値としてではなく条件付きで示されています。トーンマップと、そのパートがドラムパートかどうかで変わります。そのためここには初期値を記録せず、条件は qualifications.json に記しています。",
-    "the second byte of PITCH FINE TUNE: the page states it as part of the row above and gives it no columns of its own": "PITCH FINE TUNE の 2 バイト目です。誌面では上の行の一部として示されており、このアドレス自身の列は与えられていません。",
-    "the second byte of PITCH OFFSET FINE: the page states only that the value is carried in nibbles": "PITCH OFFSET FINE の 2 バイト目です。誌面には、値がニブルで運ばれることだけが示されています。",
+    "the second byte of PITCH FINE TUNE: the page states it as part of the row above and gives it no columns of its own": "PITCH FINE TUNE の 2 バイト目です。文書では上の行の一部として示されており、このアドレス自身の列は与えられていません。",
+    "the second byte of PITCH OFFSET FINE: the page states only that the value is carried in nibbles": "PITCH OFFSET FINE の 2 バイト目です。文書には、値がニブルで運ばれることだけが示されています。",
     "the second byte of TONE NUMBER: the page states no size for it, because the size is stated once on the row above": "TONE NUMBER の 2 バイト目です。サイズは上の行に一度だけ示されているため、この行には示されていません。"
   }
 }

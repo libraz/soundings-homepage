@@ -34,6 +34,10 @@
     "M": "moves",
     "X": "could not say"
   },
+  "windowVerdict": {
+    "W": "a window onto whichever store was addressed last",
+    "O": "holds its own value"
+  },
   "oversizeBehaviour": {
     "C": "at least the ceiling",
     "T": "truncates",

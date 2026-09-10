@@ -76,14 +76,15 @@
         "tone-map",
         "transfer",
         "vibrato",
+        "watch-set",
         "window-probe",
         "write-probe"
       ],
       "counts": {
         "regions": 854,
         "addresses": 45611,
-        "withPowerOn": 37502,
-        "withWriteProbe": 37439,
+        "withPowerOn": 41200,
+        "withWriteProbe": 37487,
         "withAlias": 78,
         "audible": 149,
         "notAudible": 522,
@@ -105,6 +106,21 @@
           "name": "GS Reset",
           "message": "F0 41 10 42 12 40 00 7F 00 41 F7",
           "note": "the Roland address the manual gives as the GS reset"
+        },
+        {
+          "name": "All Sound Off on channel 1",
+          "message": "B0 78 00",
+          "note": "A channel mode message rather than a reset, and addressed to one channel rather than to the unit. It is measured the same way because the question is the same one -- what does this put back -- and because the out-and-back an alias scan runs on cannot be run on a message that has one value and no opposite."
+        },
+        {
+          "name": "Reset All Controllers on channel 1",
+          "message": "B0 79 00",
+          "note": "A channel mode message rather than a reset, and addressed to one channel rather than to the unit. It is measured the same way because the question is the same one -- what does this put back -- and because the out-and-back an alias scan runs on cannot be run on a message that has one value and no opposite."
+        },
+        {
+          "name": "All Notes Off on channel 1",
+          "message": "B0 7B 00",
+          "note": "A channel mode message rather than a reset, and addressed to one channel rather than to the unit. It is measured the same way because the question is the same one -- what does this put back -- and because the out-and-back an alias scan runs on cannot be run on a message that has one value and no opposite."
         }
       ],
       "window": {
@@ -610,7 +626,7 @@
         "51-19",
         "51-1F"
       ],
-      "archiveBytes": 50946499,
+      "archiveBytes": 55960585,
       "catalogues": {
         "tones": true,
         "effects": true

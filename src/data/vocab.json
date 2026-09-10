@@ -1,6 +1,7 @@
 {
   "note": "Every wording the archive used that the site has to show, sorted into the buckets the locale files are organised by. yarn check:vocab fails when one of these has no translation in src/locales/vocab.*.json.",
   "verdicts": [
+    "a window onto whichever store was addressed last",
     "accepts",
     "at least the ceiling",
     "audible",
@@ -8,6 +9,7 @@
     "could not be measured",
     "could not say",
     "every address answered differently from its neighbours",
+    "holds its own value",
     "moves",
     "no yardstick under the note asked, so not asked",
     "not audible under the note asked",

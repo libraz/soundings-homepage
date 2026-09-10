@@ -16,6 +16,23 @@ function inverted(table) {
   return new Map(Object.entries(table).map(([code, phrase]) => [phrase, code]));
 }
 
+/**
+ * One stage's records with the map-wide pass first.
+ *
+ * A stage that was run more than once holds a record about the whole space and
+ * records about parts of it, and the whole-space one is what the others are read
+ * as additions to. Sorting by name alone would let a record about four addresses
+ * speak before the one about forty thousand.
+ * @param {Map<string, any>} records @returns {Map<string, any>}
+ */
+function orderedStage(records) {
+  return new Map(
+    [...records].sort(([a], [b]) =>
+      a === 'whole-map' ? -1 : b === 'whole-map' ? 1 : a.localeCompare(b),
+    ),
+  );
+}
+
 export class UnknownWording extends Error {
   /** @param {string} field @param {string} wording @param {string} source */
   constructor(field, wording, source) {
@@ -38,8 +55,11 @@ export function aggregateUnit(unit, legend) {
     holdVerdict: inverted(legend.holdVerdict),
     audibleVerdict: inverted(legend.audibleVerdict),
     oversizeBehaviour: inverted(legend.oversizeBehaviour),
+    windowVerdict: inverted(legend.windowVerdict),
   };
-  /** @param {'writeClass'|'holdVerdict'|'audibleVerdict'|'oversizeBehaviour'} field */
+  /**
+   * @param {'writeClass'|'holdVerdict'|'audibleVerdict'|'oversizeBehaviour'|'windowVerdict'} field
+   */
   const code = (field, wording, source) => {
     const found = codes[field].get(wording);
     if (found === undefined) throw new UnknownWording(field, wording, source);
@@ -129,12 +149,63 @@ export function aggregateUnit(unit, legend) {
   }
 
   // --- power-on: what each address holds before anything is sent ---------
-  const powerOn = unit.load('power-on/whole-map.json');
-  if (powerOn) {
-    for (const [address, value] of Object.entries(powerOn.values ?? {})) {
-      const record = addresses.get(address);
-      if (record) record.p = value;
+  //
+  // A stage, not a file. The stage holds one record per shape the space was
+  // asked in — whole regions, the addresses a read can reach, one address at a
+  // time — because a block need not answer a region read and a single read the
+  // same way, and two of this unit's do not. Reading only `whole-map.json` left
+  // 3,724 addresses that a later run read shown as never read.
+  //
+  // Where the shapes agree the value is the value. Where they disagree the
+  // archive holds two readings and both are kept: the first record to speak
+  // supplies the value, the others are carried beside it so the card can say a
+  // differently shaped read answered differently, and a warning names the block.
+  // Dropping the second reading would publish one measurement as the state and
+  // hide the other; picking between them is not something file order can do.
+  const powerOnRecords = orderedStage(unit.loadStage('power-on'));
+  const powerOn = powerOnRecords.get('whole-map');
+  /** @type {Map<string, Map<string, string[]>>} address -> value -> the records reading it */
+  const powerOnReadings = new Map();
+  for (const [name, record] of powerOnRecords) {
+    const path = `power-on/${name}.json`;
+    for (const [address, value] of Object.entries(record.values ?? {})) {
+      let readings = powerOnReadings.get(address);
+      if (!readings) {
+        readings = new Map();
+        powerOnReadings.set(address, readings);
+      }
+      const sources = readings.get(value);
+      if (sources) sources.push(path);
+      else readings.set(value, [path]);
     }
+  }
+  /** @type {Map<string, string[]>} block -> the addresses in it the shapes disagree on */
+  const powerOnDisagreed = new Map();
+  for (const [address, readings] of powerOnReadings) {
+    const record = addresses.get(address);
+    if (!record) continue;
+    const [[value, sources], ...rest] = [...readings];
+    record.p = value;
+    // Named only where the map-wide pass is not among the records that read it,
+    // the same way a write probe names the run that reached an address the
+    // map-wide one never asked.
+    if (!sources.includes('power-on/whole-map.json')) record.pf = sources[0];
+    if (rest.length === 0) continue;
+    record.pd = rest.map(([other, paths]) => ({ v: other, f: paths[0] }));
+    const block = blockKey(address);
+    const members = powerOnDisagreed.get(block);
+    if (members) members.push(address);
+    else powerOnDisagreed.set(block, [address]);
+  }
+  for (const [block, members] of powerOnDisagreed) {
+    const readings = powerOnReadings.get(members[0]);
+    const [first, ...others] = [...readings.values()];
+    warnings.push(
+      `${unit.unitId}: ${members.length} address(es) in ${block} answered ${first[0]} one ` +
+        `value and ${others.map((paths) => paths[0]).join(', ')} another. Both readings are kept ` +
+        'and the first is shown; which of them the unit holds is a question for another ' +
+        'measurement, not one file order can settle.',
+    );
   }
 
   // --- write-probe: what an address accepts ------------------------------
@@ -151,10 +222,7 @@ export function aggregateUnit(unit, legend) {
   // thing: none of the archive's records disagree today, and a disagreement is
   // a finding for a person rather than something to settle by file order.
   const writeProbes = unit.loadStage('write-probe');
-  const wholeMapFirst = [...writeProbes].sort(([a], [b]) =>
-    a === 'whole-map' ? -1 : b === 'whole-map' ? 1 : a.localeCompare(b),
-  );
-  for (const [name, writeProbe] of wholeMapFirst) {
+  for (const [name, writeProbe] of orderedStage(writeProbes)) {
     const path = `write-probe/${name}.json`;
     for (const region of writeProbe.regions ?? []) {
       const target = regionByStart.get(region.start);
@@ -213,7 +281,7 @@ export function aggregateUnit(unit, legend) {
   }
   const writeProbe = writeProbes.get('whole-map');
 
-  // --- window-probe: blocks that are not storage but a view of another ---
+  // --- blocks that are not storage but a view of another -----------------
   /** @type {any} */
   let window = null;
   for (const finding of writeProbe?.findings ?? powerOn?.findings ?? []) {
@@ -230,6 +298,34 @@ export function aggregateUnit(unit, legend) {
   if (window) {
     const windowed = new Set(window.blocks);
     for (const region of regions) if (windowed.has(region.bank)) region.window = true;
+  }
+
+  // --- window-probe: which single address is a view onto which store -----
+  //
+  // The finding above says which blocks are a window. This stage asks it one
+  // address at a time, and a verdict here is only ever relative to the two
+  // stores it was measured against — the record says as much itself, so the
+  // pair travels with the verdict instead of being dropped for a bare word.
+  // Which store a write through the address reached is a separate question
+  // from which one a read reports, and is kept separately for the same reason.
+  for (const [name, probe] of unit.loadStage('window-probe')) {
+    const path = `window-probe/${name}.json`;
+    for (const candidate of probe.candidates ?? []) {
+      const record = addresses.get(candidate.address);
+      if (!record) {
+        warnings.push(
+          `${unit.unitId}: ${path} asks ${candidate.address}, which no sweep or probe found.`,
+        );
+        continue;
+      }
+      vocab.add(candidate.verdict);
+      record.wd = {
+        v: code('windowVerdict', candidate.verdict, path),
+        s: probe.stores ?? [],
+        w: candidate.a_write_through_it_reached ?? null,
+        f: path,
+      };
+    }
   }
 
   // --- hold-probe: is a neighbour a different address? -------------------
@@ -276,43 +372,91 @@ export function aggregateUnit(unit, legend) {
   }
 
   // --- reset-probe: what each reset puts back ----------------------------
-  const resetProbe = unit.load('reset-probe/whole-map.json');
+  //
+  // A stage, not a file. The map-wide pass asks three resets; later runs ask
+  // those same three over addresses it never reached, and three more that are
+  // channel messages rather than a system reset. So the unit's resets are the
+  // union of what the stage asked, in the order the records name them, and an
+  // address carries one outcome per reset in that union. A position no run
+  // marked stays `-`, which the legend already spells as that reset not having
+  // been asked about the address rather than as something the archive found.
+  const resetProbes = orderedStage(unit.loadStage('reset-probe'));
   /** @type {{name: string, message: string|null, note: string|null}[]} */
-  let resets = [];
-  if (resetProbe) {
-    resets = resetProbe.resets.map((reset) => ({
-      name: reset.reset,
-      message: reset.message ?? null,
-      note: reset.note ?? null,
-    }));
-    const outcomes = [
-      ['restored_to_the_power_on_value', 'R'],
-      ['left_holding_the_mark', 'M'],
-      ['changed_to_neither', 'N'],
-      ['differs_from_power_on_afterwards', 'D'],
-    ];
-    // Two of the four outcomes are lists of addresses and two are maps from an
-    // address to the pair it ended up differing by, so both shapes are read.
-    resetProbe.resets.forEach((reset, index) => {
+  const resets = [];
+  /** @type {Map<string, number>} reset name -> its position in the union */
+  const resetAt = new Map();
+  for (const [, probe] of resetProbes) {
+    for (const reset of probe.resets ?? []) {
+      if (resetAt.has(reset.reset)) continue;
+      resetAt.set(reset.reset, resets.length);
+      resets.push({
+        name: reset.reset,
+        message: reset.message ?? null,
+        note: reset.note ?? null,
+      });
+    }
+  }
+  const outcomes = [
+    ['restored_to_the_power_on_value', 'R'],
+    ['left_holding_the_mark', 'M'],
+    ['changed_to_neither', 'N'],
+    ['differs_from_power_on_afterwards', 'D'],
+  ];
+  /** @type {Map<string, string>} `address#position` -> the record that marked it */
+  const markedBy = new Map();
+  for (const [name, probe] of resetProbes) {
+    const path = `reset-probe/${name}.json`;
+    for (const reset of probe.resets ?? []) {
+      const index = resetAt.get(reset.reset);
+      // What this one record ends up saying, gathered before any of it is
+      // merged. The first three fields are one verdict each, but the fourth
+      // asks a different question — an address that changed to neither also
+      // differs from power-on afterwards — so a record naming an address under
+      // two of them is not disagreeing with itself and the last one stands.
+      // Only what survives that is held against what another record said.
+      /** @type {Map<string, string>} address -> mark */
+      const marked = new Map();
+      /** @type {Map<string, any>} address -> the pair it ended up differing by */
+      const pairs = new Map();
       for (const [field, mark] of outcomes) {
         const value = reset[field];
         if (!value) continue;
+        // Two of the four outcomes are lists of addresses and two are maps from
+        // an address to the pair it ended up differing by, so both shapes read.
         const entries = Array.isArray(value)
           ? value.map((address) => [address, null])
           : Object.entries(value);
         for (const [address, pair] of entries) {
-          const record = addresses.get(address);
-          if (!record) continue;
-          if (!record.r) record.r = '-'.repeat(resets.length).split('');
-          record.r[index] = mark;
-          if (pair) {
-            record.rp ??= {};
-            record.rp[index] = pair;
-          }
+          marked.set(address, mark);
+          if (pair) pairs.set(address, pair);
         }
       }
-    });
-    for (const record of addresses.values()) if (record.r) record.r = record.r.join('');
+      for (const [address, mark] of marked) {
+        const record = addresses.get(address);
+        if (!record) continue;
+        if (!record.r) record.r = '-'.repeat(resets.length).split('');
+        const held = record.r[index];
+        const from = markedBy.get(`${address}#${index}`);
+        if (held !== '-' && held !== mark) {
+          warnings.push(
+            `${unit.unitId}: ${address} came out of ${JSON.stringify(reset.reset)} as ` +
+              `${held} in ${from} and as ${mark} in ${path}. The first is shown; two runs of ` +
+              'one reset disagreeing is a finding for a person, not something file order settles.',
+          );
+          continue;
+        }
+        record.r[index] = mark;
+        markedBy.set(`${address}#${index}`, path);
+        const pair = pairs.get(address);
+        if (pair) {
+          record.rp ??= {};
+          record.rp[index] = pair;
+        }
+      }
+    }
+  }
+  for (const record of addresses.values()) {
+    if (Array.isArray(record.r)) record.r = record.r.join('');
   }
 
   // --- alias-scan: which MIDI message writes here ------------------------

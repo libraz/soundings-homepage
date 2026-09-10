@@ -76,6 +76,14 @@
     "could not say": {
       "short": "could not say",
       "full": "could not say"
+    },
+    "a window onto whichever store was addressed last": {
+      "short": "a window",
+      "full": "a window onto whichever store was addressed last"
+    },
+    "holds its own value": {
+      "short": "holds its own",
+      "full": "holds its own value"
     }
   },
   "resetOutcome": {

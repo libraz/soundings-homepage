@@ -82,6 +82,9 @@ for (const unit of units) {
       if (record.h && !(record.h.v in legend.holdVerdict)) {
         problems.push(`${unit.id} ${record.a}: hold code ${record.h.v} is not in the legend`);
       }
+      if (record.wd && !(record.wd.v in legend.windowVerdict)) {
+        problems.push(`${unit.id} ${record.a}: window verdict ${record.wd.v} is not in the legend`);
+      }
       for (const entry of record.b ?? []) {
         if (!(entry.v in legend.audibleVerdict)) {
           problems.push(`${unit.id} ${record.a}: audible verdict ${entry.v} is not in the legend`);
