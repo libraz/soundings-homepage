@@ -484,6 +484,75 @@ a.sg-cell:focus-visible,
   gap: 2px;
 }
 
+/* --- How far a claim about an algorithm got ----------------------------
+   A reading of what the measurements mean, and how far identifying it has
+   reached. It takes none of the four hues, for the same reason a document's
+   claim does not: the four stand for the four things a *measurement* can be,
+   and how far a reading of several of them got is not one of them.
+
+   So it is ink, and it is the grid's own two marks — a fill where something
+   closed, a ring where nothing has. A reader who has learnt the address map
+   has already learnt this. */
+.sg-level,
+.vp-doc .sg-level {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--color-text-tertiary);
+}
+
+.sg-level::before {
+  content: '';
+  width: 0.5em;
+  height: 0.5em;
+  flex: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+
+/* The model closed. Filled, and set in the readout's own ink at full strength:
+   it is the one state on these pages that carries an implementation. */
+.sg-level--identified {
+  color: var(--sg-readout);
+  font-weight: 500;
+}
+
+.sg-level--identified::before {
+  background: currentColor;
+  box-shadow: none;
+}
+
+/* Still open. Hollow, which is the mark this site uses for a question that has
+   not been answered rather than one answered in the negative. */
+.sg-level--investigating {
+  color: var(--color-text-secondary);
+}
+
+/* Out of the running, each for its own reason. Set back rather than struck: the
+   claim is still on the page and still worth reading, and a strike would say it
+   had been erased. */
+.sg-level--parked,
+.sg-level--retracted,
+.sg-level--superseded {
+  color: var(--color-text-muted);
+}
+
+/* The same two marks as cells, for the strip that shows where identification
+   has reached across a unit's effect types. */
+.sg-cell.sg-cell--identified {
+  background: color-mix(in srgb, var(--sg-readout) 70%, transparent);
+}
+
+.sg-cell.sg-cell--claimed {
+  background: color-mix(in srgb, var(--sg-readout) 7%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sg-readout) 42%, transparent);
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition-duration: 1ms !important;

@@ -155,6 +155,36 @@ export function useI18n() {
     return quoting('documents', sentence).quoted;
   }
 
+  /**
+   * One of the four short statements a claim about an algorithm is read
+   * through: what it says, what it is called, what it adds beyond its evidence,
+   * and what would show it wrong.
+   *
+   * Only those four are translated. Everything under them — what an era prior
+   * argues, what a gate was for, why a residual leans — is the archive writing
+   * in its own voice, revised as the reading goes on, and is shown as written.
+   * The page marks where that line falls rather than letting a reader discover
+   * it by meeting English halfway down a Japanese page.
+   */
+  function claimed(sentence: string | null | undefined): string {
+    return quoting('inferences', sentence).text;
+  }
+
+  /** Whether `claimed()` had to fall back to the language it was written in. */
+  function claimedIsQuoted(sentence: string | null | undefined): boolean {
+    return quoting('inferences', sentence).quoted;
+  }
+
+  /**
+   * A sentence the archive wrote that this site never translates.
+   *
+   * The dashes are still undone, because that is typesetting rather than
+   * content, and nothing else is touched.
+   */
+  function verbatim(sentence: string | null | undefined): string {
+    return sentence ? dashed(sentence) : '';
+  }
+
   function quoting(bucket: string, sentence: string | null | undefined) {
     if (!sentence) return { text: '', quoted: false };
     const table = (lookup(vocabulary.value, bucket) ?? {}) as Record<string, string>;
@@ -188,6 +218,9 @@ export function useI18n() {
     noteIsQuoted,
     stated,
     statedIsQuoted,
+    claimed,
+    claimedIsQuoted,
+    verbatim,
     resetOutcome,
     stimulus,
     asset,

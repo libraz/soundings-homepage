@@ -4,6 +4,8 @@ import './custom.css';
 
 import AddressCard from '../../src/components/AddressCard.vue';
 import AddressSearch from '../../src/components/AddressSearch.vue';
+import AlgorithmDetail from '../../src/components/AlgorithmDetail.vue';
+import AlgorithmOverview from '../../src/components/AlgorithmOverview.vue';
 import BehaviourList from '../../src/components/BehaviourList.vue';
 import BlockTable from '../../src/components/BlockTable.vue';
 import DocumentClaims from '../../src/components/DocumentClaims.vue';
@@ -32,6 +34,8 @@ export default {
   enhanceApp({ app }) {
     app.component('AddressCard', AddressCard);
     app.component('AddressSearch', AddressSearch);
+    app.component('AlgorithmDetail', AlgorithmDetail);
+    app.component('AlgorithmOverview', AlgorithmOverview);
     app.component('BehaviourList', BehaviourList);
     app.component('BlockTable', BlockTable);
     app.component('DocumentClaims', DocumentClaims);

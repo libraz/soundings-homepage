@@ -45,18 +45,24 @@
    three lines of text — which reads as a layout that broke rather than as a
    column that was chosen, and the reader is right to think so.
 
+   The wide one is set against the container rather than against a reading
+   column: an application page runs to 1180px, and at anything short of about
+   nine tenths of that the text reads as a column that failed to fill. It is
+   deliberately past what a paragraph of body copy should be set at, which is
+   what `--sg-measure` is for.
+
    Both are set per script rather than per page. `ch` is the width of a zero, so
    a measure written in it is a Latin measure: at 68ch a Japanese paragraph
    wraps at 37 fullwidth characters, barely half of what the same rule gives
    English. A fullwidth character is 1em, so Japanese is set in em. */
 :root {
   --sg-measure: 70ch;
-  --sg-measure-wide: 96ch;
+  --sg-measure-wide: 128ch;
 }
 
 html[lang^='ja'] {
   --sg-measure: 46em;
-  --sg-measure-wide: 62em;
+  --sg-measure-wide: 76em;
 }
 
 /* --- Links --------------------------------------------------------------

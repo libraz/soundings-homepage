@@ -409,6 +409,187 @@ export interface ClaimComparison {
   rows: ComparisonRow[];
 }
 
+/**
+ * What somebody read out of the measurements: which algorithm is behind a byte,
+ * and how far identifying it has got.
+ *
+ * Held apart from everything else in the type as it is on the page. A record in
+ * the archive says what a unit answered and is wrong only if the rig was; one of
+ * these says what is behind that answer, and it can be wrong in ways nothing
+ * under `data/` can be. `level` is read off the archive's own state and its own
+ * verdict and is never worked out here — a page that reached its own verdict
+ * could disagree with the record printed beside it.
+ */
+export type AlgorithmLevel = 'identified' | 'investigating' | 'parked' | 'retracted' | 'superseded';
+
+/** One curve: what the model answers, and what a run actually read. */
+export interface AlgorithmChart {
+  id: string;
+  /** which of several models this came from, where the claim names more than one */
+  label: string | null;
+  /** the parameter, or the printed range for a table */
+  of: string;
+  section: string;
+  byte: string | null;
+  quantity: 'hz' | 'db' | 'count' | 'q' | 'ratio';
+  log: boolean;
+  /**
+   * Whether the law holds a value across a setting rather than running through
+   * it. A table and a set of states do; a handful of read points interpolated
+   * between do not, and drawing the first as the second says the quantity
+   * passed through every value in between.
+   */
+  step: boolean;
+  from: string | null;
+  why: string | null;
+  model: string;
+  verdict: string | null;
+  /** what the model answers at every setting */
+  series: [number, number][];
+  /** the settings a run read, where the map names them */
+  marks: [number, number][];
+}
+
+/**
+ * What a published document prints the things a claim is about as.
+ *
+ * The archive names none of them, and rightly: a name out of a specification is
+ * not a measurement. A printed name is not one either, so it travels with the
+ * page it was read from and is shown the way every other printed statement on
+ * this site is shown — beside a citation, never in the four colours.
+ *
+ * `parameters` is filled only where the claim is about a single effect type. The
+ * same address byte is a different parameter under a different type, so across a
+ * claim reaching three of them there is no answer to give.
+ */
+export interface AlgorithmTitle {
+  names: { name: string; page: number; document: string }[];
+  /** how many further named types the claim reaches */
+  more: number;
+  parameters: { name: string; page: number }[];
+  parametersMore: number;
+  document: string;
+}
+
+/** The model as code, or the reason there is none. */
+export interface AlgorithmExample {
+  label: string | null;
+  model: string;
+  language: string;
+  code?: string;
+  /**
+   * The same code, highlighted at sync time with the pair VitePress sets its own
+   * blocks with, so a code example reads the same here as on a docs page. The
+   * plain `code` is kept beside it: it is what the copy button hands over, and a
+   * reader pasting span tags into an editor is what keeping only one produces.
+   */
+  codeHtml?: string;
+  unsupported?: string;
+}
+
+export interface AlgorithmGate {
+  name: string;
+  passed: boolean | null;
+  why: string | null;
+  figures: Record<string, string | number>;
+}
+
+export interface AlgorithmShard {
+  id: string;
+  /** the inference file in the archive */
+  path: string;
+  unitId: string;
+  state: string | null;
+  level: AlgorithmLevel;
+  /** why it is at that level, in the archive's own terms */
+  why: string;
+  verdict: string | null;
+  rounds: number | null;
+  madeAt: string | null;
+  madeBy: string | null;
+  about: {
+    scope: string;
+    class: string | null;
+    types: string[];
+    addresses: string[];
+    checkedOnUnits: string[];
+  };
+  /** The manual's name for what it is about, where a manual reaches it. */
+  title: AlgorithmTitle | null;
+  /** Every type it reaches, with what a document prints that type as. */
+  printedTypes: { type: string; name: string | null }[];
+  /** The editions the printed names were read from. */
+  documents: CitedDocument[];
+  supersededBy: string | null;
+  retractedBecause: string | null;
+  claim: string | null;
+  named: string | null;
+  whyNotNamed: string | null;
+  adds: string | null;
+  refutedBy: string | null;
+  couldHaveBeenRefutedBy: string | null;
+  whatItWouldChange: string[];
+  grounds: {
+    measurements: { file: string; within: string | null; keys: string[]; values: unknown[] }[];
+    documentRows: { file: string; rows: string[] }[];
+    eraPriors: { claim: string | null; why: string | null; wouldBeWrongIf: string | null }[];
+    community: { claim: string | null; source: string | null; traceableTo: string }[];
+  };
+  alternatives: {
+    reading: string | null;
+    candidate: string | null;
+    standing: boolean;
+    ruledOutBy: string | null;
+    equivalent: boolean;
+    separatedBy: Record<string, unknown> | null;
+  }[];
+  reproduces: {
+    verdict: string | null;
+    measuredIn: string | null;
+    comparedAgainst: { records: string[]; generatedFrom: string | null; excluded: unknown[] };
+    domain: Record<string, unknown> | null;
+    residual: Record<string, unknown> | null;
+    gates: AlgorithmGate[];
+  } | null;
+  models: { label: string | null; path: string; kind: string | null }[];
+  charts: AlgorithmChart[];
+  examples: AlgorithmExample[];
+  /** every field the record holds that the reader has no home for */
+  extra: { key: string; text: string }[];
+}
+
+/** One line of the unit's algorithm index. */
+export interface AlgorithmLine {
+  id: string;
+  level: AlgorithmLevel;
+  why: string;
+  state: string | null;
+  verdict: string | null;
+  rounds: number | null;
+  claim: string | null;
+  named: string | null;
+  title: AlgorithmTitle | null;
+  types: string[];
+  addresses: string[];
+  scope: string;
+  examples: number;
+  charts: number;
+  rests: {
+    measurements: number;
+    documentRows: number;
+    eraPriors: number;
+    community: number;
+  };
+  alternatives: { total: number; standing: number };
+}
+
+export interface AlgorithmSummary {
+  unitId: string;
+  documents: CitedDocument[];
+  counts: Record<AlgorithmLevel | 'total', number>;
+  inferences: AlgorithmLine[];
+}
+
 export interface Region {
   start: string;
   size: number;

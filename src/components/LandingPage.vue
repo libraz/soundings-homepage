@@ -47,7 +47,12 @@ const coverage = computed(() =>
 const primary = computed(() => all[0]);
 
 /**
- * The four things the archive can be read as, each linking into it.
+ * The five things the archive can be read as, each linking into it.
+ *
+ * Algorithms sits second because it is the only one of them that answers the
+ * question a reader most often arrives with — what is this effect actually
+ * doing — and because it is the only part of the site that publishes something
+ * a reader can take away and run.
  *
  * Observations is one of them rather than a tab six along, because it is the
  * only part of the archive that is already prose: a reader who has not yet
@@ -67,6 +72,12 @@ const entries = computed(() => [
     title: `${t('nav.tones')} / ${t('nav.effects')}`,
     href: route(`/units/${primary.value?.id}/tones`),
     body: t('landing.cataloguesBody'),
+  },
+  {
+    key: 'algorithms',
+    title: t('nav.algorithms'),
+    href: route(`/units/${primary.value?.id}/algorithms`),
+    body: t('landing.algorithmsBody'),
   },
   {
     key: 'observations',

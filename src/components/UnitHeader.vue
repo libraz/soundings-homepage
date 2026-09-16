@@ -14,7 +14,10 @@ import { useI18n } from '../composables/useI18n';
  */
 const props = defineProps<{
   unitId: string;
-  /** `unit`, `map`, `tones`, `effects`, `emulator`, `observations` or `documents`. */
+  /**
+   * `unit`, `map`, `tones`, `effects`, `algorithms`, `emulator`, `observations`
+   * or `documents`.
+   */
   active?: string;
 }>();
 
@@ -39,6 +42,7 @@ const sections = computed(() => [
   { key: 'map', label: t('nav.map'), path: '/map' },
   { key: 'tones', label: t('nav.tones'), path: '/tones' },
   { key: 'effects', label: t('nav.effects'), path: '/effects' },
+  { key: 'algorithms', label: t('nav.algorithms'), path: '/algorithms' },
   { key: 'emulator', label: t('nav.emulator'), path: '/emulator' },
   { key: 'observations', label: t('nav.observations'), path: '/observations' },
   { key: 'documents', label: t('nav.documents'), path: '/documents' },

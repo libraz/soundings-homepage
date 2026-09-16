@@ -31,6 +31,7 @@ function themeConfig(prefix: string, strings: typeof en) {
             { text: strings.nav.map, link: path(`/units/${soleUnit}/map`) },
             { text: strings.nav.tones, link: path(`/units/${soleUnit}/tones`) },
             { text: strings.nav.effects, link: path(`/units/${soleUnit}/effects`) },
+            { text: strings.nav.algorithms, link: path(`/units/${soleUnit}/algorithms`) },
             { text: strings.nav.emulator, link: path(`/units/${soleUnit}/emulator`) },
           ]
         : []),
@@ -42,6 +43,7 @@ function themeConfig(prefix: string, strings: typeof en) {
           text: strings.nav.docs,
           items: [
             { text: strings.nav.reading, link: path('/docs/') },
+            { text: strings.algorithms.methodLink, link: path('/docs/identifying-an-algorithm') },
             { text: strings.nav.glossary, link: path('/docs/glossary') },
           ],
         },
