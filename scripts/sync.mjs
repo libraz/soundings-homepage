@@ -20,8 +20,17 @@ import { aggregateUnit } from './lib/aggregate.mjs';
 import { Archive } from './lib/archive.mjs';
 import { buildEffects, buildTones } from './lib/catalog.mjs';
 import { buildDevice } from './lib/device.mjs';
-import { cite, claimsFor, DIFFERS, Documents, statementsFor } from './lib/documents.mjs';
+import {
+  cite,
+  claimsFor,
+  DIFFERS,
+  Documents,
+  printedEffects,
+  statementsFor,
+} from './lib/documents.mjs';
 import { Emitter } from './lib/emit.mjs';
+import { highlighter } from './lib/highlight.mjs';
+import { Inferences, indexOf, prose } from './lib/inferences.mjs';
 import { classifyVocabulary } from './lib/vocab.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -40,7 +49,7 @@ function readOwnJson(name) {
   return JSON.parse(readFileSync(join(dataDir, name), 'utf8'));
 }
 
-function main() {
+async function main() {
   if (!existsSync(sourceRoot)) {
     console.error(
       `No soundings checkout at ${sourceRoot}.\n` +
@@ -53,6 +62,7 @@ function main() {
   const quirks = readOwnJson('quirks.json');
   const archive = new Archive(sourceRoot);
   const documents = new Documents(sourceRoot);
+  const inferences = new Inferences(sourceRoot, await highlighter());
   const emit = new Emitter({ check });
 
   /** @type {any[]} */
@@ -62,6 +72,9 @@ function main() {
   /** Every sentence a document record restated, gathered as the units are read. */
   /** @type {Set<string>} */
   const documentProse = new Set();
+  /** The same, for the claims made about what the measurements mean. */
+  /** @type {Set<string>} */
+  const inferenceProse = new Set();
   /** @type {string[]} */
   const warnings = [];
 
@@ -177,8 +190,36 @@ function main() {
     const tones = buildTones(unit);
     if (tones) emit.json(join(unitDir, 'tones.json'), tones);
 
-    const effects = buildEffects(unit, legend, vocab);
-    if (effects) emit.json(join(unitDir, 'effects.json'), effects);
+    const effects = buildEffects(unit, legend, vocab, claims.printed);
+    // The citation travels with the names, as it does everywhere else: what a
+    // type is printed as is a statement a document makes, and every one of
+    // those on this site says which edition it was read from.
+    if (effects) emit.json(join(unitDir, 'effects.json'), { ...effects, documents: claims.cited });
+
+    // What somebody read out of these measurements: which algorithm is behind a
+    // type, how far identifying it got, and — where the archive's own verdict
+    // says a rendered model reproduced what the unit did — that model printed as
+    // code. One shard per claim, because a claim carries its whole grounds and
+    // several curves of a hundred and twenty-eight points, and an index of them
+    // is what the unit's page opens with.
+    const claimed = inferences.printedAs(claims.printed).load(unitId, warnings);
+    prose(claimed, inferenceProse);
+    for (const inference of claimed) {
+      // The citation travels with the claim. A claim headed by the name a
+      // manual prints is a claim carrying a statement out of that manual, and
+      // every one of those on this site says which edition and which page.
+      emit.json(join(unitDir, 'algorithms', `${inference.id}.json`), {
+        ...inference,
+        documents: claims.cited,
+      });
+    }
+    if (claimed.length > 0) {
+      emit.json(join(unitDir, 'algorithms.json'), {
+        unitId,
+        documents: claims.cited,
+        ...indexOf(claimed),
+      });
+    }
 
     emit.json(join(unitDir, 'device.json'), buildDevice(aggregated, quirks));
 
@@ -192,8 +233,24 @@ function main() {
     units.push({
       ...aggregated.summary,
       blocks: [...shards.keys()].sort(),
+      // The route table is read off this, the same way the block pages are: a
+      // claim added to the archive and synced is a page, with nothing written by
+      // hand per claim anywhere.
+      // The id and the heading, because the heading has to exist when the route
+      // table is built: a page whose `h1` is fetched with its body is a page
+      // that opens on the section's own name, and seventeen tabs all reading
+      // "What is behind the measurements" are seventeen tabs nobody can tell
+      // apart. A claim no document names keeps the section's title.
+      algorithms: claimed.map((inference) => ({
+        id: inference.id,
+        title: headingOf(inference.title),
+      })),
       archiveBytes: unit.size(),
-      catalogues: { tones: Boolean(tones), effects: Boolean(effects) },
+      catalogues: {
+        tones: Boolean(tones),
+        effects: Boolean(effects),
+        algorithms: claimed.length > 0,
+      },
     });
   }
 
@@ -211,6 +268,12 @@ function main() {
     // the last translation pass would otherwise arrive on the Japanese site in
     // English with nothing to say it had been missed.
     documents: [...documentProse].sort(),
+    // The short statements a claim about an algorithm is read through: what it
+    // says, what it is called, what it adds beyond its evidence, and what would
+    // show it wrong. The paragraphs underneath those are shown as the archive's
+    // own words and are not gathered here — see `prose` in lib/inferences.mjs
+    // for where that line is drawn and why.
+    inferences: [...inferenceProse].sort(),
   });
 
   copyDocs(archive, emit);
@@ -236,6 +299,9 @@ function collectClaims({ documents, aggregated, blocks, unitId, warnings }) {
   const byBlock = new Map();
   /** @type {any[]} */
   const cited = [];
+  /** What each document prints the unit's effect types and parameters as. */
+  /** @type {any[]} */
+  const printed = [];
   /** @type {any[]} */
   const statements = [];
   // Every sentence these records restate, so a document read after the last
@@ -260,6 +326,7 @@ function collectClaims({ documents, aggregated, blocks, unitId, warnings }) {
     }
     const document = documents.load(id);
     cited.push(cite(document));
+    printed.push(printedEffects(document));
     const { claims, absent } = claimsFor({
       document,
       addresses: aggregated.addresses,
@@ -398,6 +465,7 @@ function collectClaims({ documents, aggregated, blocks, unitId, warnings }) {
   return {
     byBlock,
     cited,
+    printed: firstPrinting(printed, unitId, warnings),
     statements,
     prose,
     counts: { ...counts, claims: claimTotal, absent: absentTotal },
@@ -405,6 +473,59 @@ function collectClaims({ documents, aggregated, blocks, unitId, warnings }) {
     absentRows,
     comparison,
   };
+}
+
+/**
+ * A claim's printed title as one line, for the route table and the browser tab.
+ *
+ * The page itself sets the same names as marked-up parts, so that a type and the
+ * parameter inside it are not one run of text; a heading in a route table is a
+ * string and has to carry the separators itself.
+ * @param {any} title as `titleOf` returns it
+ * @returns {string | null}
+ */
+function headingOf(title) {
+  if (!title) return null;
+  const names = title.names.map((entry) => entry.name).join(' · ');
+  const types = title.more ? `${names} +${title.more}` : names;
+  if (title.parameters.length === 0) return types;
+  const parameters = title.parameters.map((entry) => entry.name).join(' / ');
+  return `${types} — ${parameters}${title.parametersMore ? ` +${title.parametersMore}` : ''}`;
+}
+
+/**
+ * The printed names for one unit, from the documents that unit names.
+ *
+ * A unit can name more than one document — a model and the model before it share
+ * an effect list — and where two of them print the same type under different
+ * names that is a difference between two documents, not something file order
+ * should settle. The first printing a unit names is what is shown, and a second
+ * that disagrees is a warning naming both, the same way two records about one
+ * address are handled.
+ * @param {any[]} printings @param {string} unitId @param {string[]} warnings
+ */
+function firstPrinting(printings, unitId, warnings) {
+  /** @type {Map<string, any>} */
+  const types = new Map();
+  /** @type {Map<string, any>} */
+  const parameters = new Map();
+  for (const printing of printings) {
+    for (const [key, held] of printing.types) {
+      const already = types.get(key);
+      if (!already) {
+        types.set(key, { ...held, document: printing.document });
+      } else if (already.name !== held.name) {
+        warnings.push(
+          `${unitId}: ${key} is printed as ${JSON.stringify(already.name)} in ` +
+            `${already.document} and as ${JSON.stringify(held.name)} in ${printing.document}`,
+        );
+      }
+    }
+    for (const [key, held] of printing.parameters) {
+      if (!parameters.has(key)) parameters.set(key, { ...held, document: printing.document });
+    }
+  }
+  return { types, parameters };
 }
 
 /**
@@ -457,4 +578,4 @@ function report(emit, units, warnings) {
   console.info(`${emit.changed.length} written, ${emit.stale.length} removed`);
 }
 
-main();
+await main();

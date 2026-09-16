@@ -43,13 +43,70 @@ export class Documents {
     if (!meta) throw new Error(`no document ${id} under ${this.dir}`);
     const parsed = read('address-map.json');
     const byHand = read('by-hand.json');
+    const effects = read('effect-list.json');
+    // Every table the hand-kept file holds has to be read by something here. A
+    // table it holds that nothing reads is rows somebody cut out of a page by
+    // hand and this site is not showing, which is how a thousand joined claims
+    // went missing once already.
+    for (const table of Object.keys(byHand?.tables ?? {})) {
+      if (table !== 'address-map' && table !== 'effect-list') {
+        throw new Error(
+          `${id}: by-hand.json holds rows for a ${table} table, which nothing here reads. ` +
+            'They are not missing, they are unread.',
+        );
+      }
+    }
     return {
       meta,
-      addressMap: { ...parsed, rows: merged(parsed?.rows ?? [], byHand?.rows ?? [], id) },
+      addressMap: {
+        ...parsed,
+        rows: merged(parsed?.rows ?? [], handRows(byHand, 'address-map', id), id),
+      },
+      // The appendix that names each insertion effect type and each of its
+      // parameters. It is the only place the printed name of a type exists, and
+      // a type is what most claims about an algorithm are about.
+      effectList: effects
+        ? {
+            ...effects,
+            rows: mergedEffectRows(effects.rows ?? [], handRows(byHand, 'effect-list', id), id),
+          }
+        : null,
       qualifications: read('qualifications.json'),
       statements: read('statements.json'),
     };
   }
+}
+
+/**
+ * The hand-read rows for one of the document's tables.
+ *
+ * The archive keeps them per table, because one list can be printed twice in one
+ * document and the residue a parser leaves on each printing is its own. Read
+ * with a default rather than a check, a rename of this container took forty-one
+ * rows and a thousand and seventy joined claims off the site without failing
+ * anything -- so a file with no `tables` container at all is an error here, and
+ * only an absent file is an absence.
+ *
+ * A container that is there and does not list this table is the honest case: one
+ * document's parser refused rows of its effect list and another's did not. The
+ * rename that caused the loss is caught by the container check here and by the
+ * caller's check that every table listed is read by something.
+ * @param {any} byHand @param {string} table @param {string} id
+ */
+function handRows(byHand, table, id) {
+  if (!byHand) return [];
+  if (!byHand.tables || typeof byHand.tables !== 'object') {
+    throw new Error(
+      `${id}: by-hand.json has ${JSON.stringify(Object.keys(byHand))}, which is a shape this ` +
+        'reader does not know -- the rows it would have merged are not missing, they are unread.',
+    );
+  }
+  const rows = byHand.tables[table];
+  if (rows === undefined) return [];
+  if (!Array.isArray(rows)) {
+    throw new Error(`${id}: by-hand.json holds a ${table} table that is not a list of rows.`);
+  }
+  return rows;
 }
 
 /**
@@ -404,6 +461,64 @@ export function statementsFor({ document, addresses }) {
       },
     ];
   });
+}
+
+/**
+ * The parsed and the hand-read rows of the effect list, as one table.
+ *
+ * Same rule as the address map and a different key: a row of this list is one
+ * parameter of one effect type, so what identifies it is the page, the two type
+ * bytes and the low byte of the address. A row with no address byte is the
+ * heading the type itself is printed as.
+ * @param {any[]} parsed @param {any[]} byHand @param {string} id
+ */
+function mergedEffectRows(parsed, byHand, id) {
+  const key = (row) => `${row.page} ${row.msb} ${row.lsb} ${row.address_lsb ?? '-'}`;
+  const seen = new Set(parsed.map(key));
+  for (const row of byHand) {
+    if (seen.has(key(row))) {
+      throw new Error(
+        `${id}: ${key(row)} is in both effect-list.json and by-hand.json. The hand-kept file ` +
+          'is for rows the parser refused; a row it now reads should be removed from it.',
+      );
+    }
+    seen.add(key(row));
+  }
+  return [...parsed, ...byHand];
+}
+
+/**
+ * What a document prints each insertion effect type and each of its parameters
+ * as.
+ *
+ * This is the only record of the name anybody has ever called one of these by.
+ * The archive itself names nothing: `01 20` is `01 20` there, because a name
+ * from a specification is not a measurement. A printed name is neither — it is
+ * what a published page states, and it travels with the page it was read from
+ * so that it is never mistaken for something the unit answered.
+ *
+ * Parameters are keyed by type as well as by address byte. The same byte is a
+ * different parameter under a different type, and a map keyed by the byte alone
+ * would put a delay's feedback control on an equaliser.
+ * @param {any} document as `Documents.load` returns it
+ */
+export function printedEffects(document) {
+  /** @type {Map<string, {name: string, number: string | null, page: number}>} */
+  const types = new Map();
+  /** @type {Map<string, {name: string, page: number}>} */
+  const parameters = new Map();
+  for (const row of document.effectList?.rows ?? []) {
+    if (!row.msb || !row.lsb) continue;
+    const type = `${row.msb} ${row.lsb}`;
+    if (row.address_lsb) {
+      if (!row.parameter) continue;
+      parameters.set(`${type}/${row.address_lsb}`, { name: row.parameter, page: row.page });
+      continue;
+    }
+    if (!row.effect || types.has(type)) continue;
+    types.set(type, { name: row.effect, number: row.type ?? null, page: row.page });
+  }
+  return { document: document.meta.document_id, types, parameters };
 }
 
 /** What the document is, for a citation beside every claim it produced. */

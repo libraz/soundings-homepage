@@ -55,18 +55,26 @@
       },
       "stages": [
         "alias-scan",
+        "arrival",
         "balance",
+        "balance-bands",
         "block",
         "boundary",
         "contrast",
         "decay",
+        "efx-bands",
         "efx-map",
         "efx-motion",
         "efx-params",
+        "efx-partials",
+        "efx-rate",
         "efx-sort",
+        "efx-sway",
+        "efx-time",
         "hold-probe",
         "motion",
         "offsets",
+        "phase",
         "port-read",
         "port-send",
         "power-on",
@@ -626,10 +634,93 @@
         "51-19",
         "51-1F"
       ],
-      "archiveBytes": 55960585,
+      "algorithms": [
+        {
+          "id": "0100-a-chain-of-four-sections-and-an-output-gain",
+          "title": "Stereo-EQ"
+        },
+        {
+          "id": "0120-eight-allpass-sections-summed-with-the-dry",
+          "title": "Phaser — + Manual / Mix"
+        },
+        {
+          "id": "0120-the-resonance-byte-closes-a-loop",
+          "title": "Phaser — Reso"
+        },
+        {
+          "id": "0122-a-rotary-rate-byte-aims-a-rotor-and-the-rotor-stops-short",
+          "title": "Rotary — Low Slow / Hi Slow"
+        },
+        {
+          "id": "0122-an-acceleration-byte-is-four-bits-and-a-multiplier",
+          "title": "Rotary — Low Accl / Hi Accl"
+        },
+        {
+          "id": "0123-the-flanger-and-the-chorus-share-a-front-end",
+          "title": "Stereo Flanger · Stereo Chorus"
+        },
+        {
+          "id": "0142-a-filter-byte-sits-on-one-pole",
+          "title": "Stereo Chorus — Pre Filter / Cutoff"
+        },
+        {
+          "id": "0150-a-damping-byte-sits-on-the-cheapest-pole",
+          "title": "Stereo Delay — HF Damp"
+        },
+        {
+          "id": "amp-four-fixed-curves-after-the-drive-stage",
+          "title": "Overdrive · Distortion · OD1 / OD2"
+        },
+        {
+          "id": "azimuth-a-byte-rounded-to-a-quarter-and-clamped",
+          "title": "3D Auto · 3D Manual"
+        },
+        {
+          "id": "balance-two-ramps-that-meet-at-full",
+          "title": "Stereo Delay · Tm Ctrl Delay · 3D Delay"
+        },
+        {
+          "id": "defaults-every-parameter-powers-up-where-its-page-says",
+          "title": null
+        },
+        {
+          "id": "freq-the-byte-indexes-a-third-octave-table",
+          "title": "Stereo-EQ · Stereo Chorus · Stereo Delay"
+        },
+        {
+          "id": "gain-the-byte-is-a-decibel-a-step",
+          "title": "Stereo-EQ · Stereo Chorus · Stereo Delay"
+        },
+        {
+          "id": "level-the-multiplier-is-a-seventh-bit-table",
+          "title": "Stereo-EQ · Distortion · Hexa Chorus"
+        },
+        {
+          "id": "pan-one-multiplier-a-side-under-a-term-added-after-it",
+          "title": "Spectrum · Compressor · Humanizer"
+        },
+        {
+          "id": "rate-the-byte-indexes-a-printed-table",
+          "title": "Phaser · Auto Wah · Stereo Flanger +18"
+        },
+        {
+          "id": "time-the-byte-indexes-a-ladder-cut-to-whole-samples",
+          "title": "Hexa Chorus · Stereo Delay · Mod Delay +3"
+        },
+        {
+          "id": "tone-a-pair-of-fixed-first-order-shelves",
+          "title": "Stereo Chorus · Stereo Delay"
+        },
+        {
+          "id": "wave-the-byte-picks-one-of-five-fixed-shapes",
+          "title": "Tremolo · Auto Pan"
+        }
+      ],
+      "archiveBytes": 68667955,
       "catalogues": {
         "tones": true,
-        "effects": true
+        "effects": true,
+        "algorithms": true
       }
     }
   ]

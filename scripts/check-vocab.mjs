@@ -92,6 +92,29 @@ for (const locale of locales) {
         );
       }
     }
+
+    // What a claim about an algorithm says, what it is called, what it adds to
+    // its evidence and what would show it wrong. Four statements per claim and
+    // no more: the paragraphs under them are the archive arguing in its own
+    // voice and are revised as it goes, so they are shown as the archive's own
+    // words rather than translated — the same treatment a stimulus name gets.
+    // These four are what a reader has to have before any of that is worth
+    // reading, so they are held to the same rule the document restatements are.
+    for (const sentence of vocab.inferences ?? []) {
+      if (!table.inferences?.[sentence]) {
+        problems.push(
+          `vocab.${locale}.json: inferences is missing ${JSON.stringify(sentence.slice(0, 60))}…`,
+        );
+      }
+    }
+    for (const sentence of Object.keys(table.inferences ?? {})) {
+      if (!(vocab.inferences ?? []).includes(sentence)) {
+        problems.push(
+          `vocab.${locale}.json: ${JSON.stringify(sentence.slice(0, 60))}… is no longer claimed ` +
+            'by any inference record',
+        );
+      }
+    }
   }
 
   // A translation for a wording the archive no longer uses is dead weight that
@@ -112,5 +135,6 @@ if (problems.length > 0) {
 console.info(
   `vocab: ${vocab.verdicts.length} verdicts, ${vocab.qualifiers.length} qualifiers, ` +
     `${vocab.stimuli.length} stimulus identifiers, ` +
-    `${(vocab.documents ?? []).length} document restatements, covered in ${locales.join(', ')}`,
+    `${(vocab.documents ?? []).length} document restatements, ` +
+    `${(vocab.inferences ?? []).length} claim statements, covered in ${locales.join(', ')}`,
 );

@@ -65,6 +65,18 @@
       "short": "no yardstick",
       "full": "no yardstick under the note asked, so not asked"
     },
+    "asked at a value its parameter is not printed as having, so not asked": {
+      "short": "no such value",
+      "full": "asked at a value its parameter is not printed as having, so not asked"
+    },
+    "asked with its own stage out of the output, so not asked": {
+      "short": "stage out",
+      "full": "asked with its own stage out of the output, so not asked"
+    },
+    "asked with its own stage's modulation at nothing, so not asked": {
+      "short": "modulation off",
+      "full": "asked with its own stage's modulation at nothing, so not asked"
+    },
     "static": {
       "short": "stands still",
       "full": "static"

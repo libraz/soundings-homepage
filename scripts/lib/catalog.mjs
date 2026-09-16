@@ -67,9 +67,11 @@ export function buildTones(unit) {
  * @param {import('./archive.mjs').UnitArchive} unit
  * @param {any} legend
  * @param {Set<string>} vocab
+ * @param {{types: Map<string, any>, parameters: Map<string, any>}} printed what a
+ *   published document prints each type and each of its parameters as
  * @returns {any | null}
  */
-export function buildEffects(unit, legend, vocab) {
+export function buildEffects(unit, legend, vocab, printed) {
   const types = unit.load('efx-map/types.json');
   if (!types) return null;
 
@@ -135,6 +137,24 @@ export function buildEffects(unit, legend, vocab) {
       audibleBy: entry.audible_by ?? null,
       steadierWhenRouted: entry.steadier_when_routed === true,
     };
+  }
+
+  // What a document prints each of these as.
+  //
+  // The archive names none of them: `01 20` is `01 20` there, because a name out
+  // of a specification is not a measurement. A printed name is not one either,
+  // and it is kept in the shape every other printed statement on this site is
+  // kept in -- the name, and the page it was read from -- so that it can be
+  // shown beside the type without ever reading as something the unit answered.
+  for (const effect of byType.values()) {
+    const name = printed?.types.get(effect.type);
+    effect.printed = name
+      ? { name: name.name, number: name.number, page: name.page, document: name.document }
+      : null;
+    for (const parameter of effect.parameters ?? []) {
+      const row = printed?.parameters.get(`${effect.type}/${parameter.address.slice(-2)}`);
+      parameter.printed = row ? { name: row.name, page: row.page, document: row.document } : null;
+    }
   }
 
   const effects = [...byType.values()];

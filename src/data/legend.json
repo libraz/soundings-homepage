@@ -27,7 +27,10 @@
     "Y": "audible",
     "N": "not audible under the note asked",
     "M": "started something that does not repeat",
-    "X": "no yardstick under the note asked, so not asked"
+    "X": "no yardstick under the note asked, so not asked",
+    "P": "asked at a value its parameter is not printed as having, so not asked",
+    "O": "asked with its own stage out of the output, so not asked",
+    "Z": "asked with its own stage's modulation at nothing, so not asked"
   },
   "efxSortVerdict": {
     "S": "static",
