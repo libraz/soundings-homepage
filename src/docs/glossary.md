@@ -64,10 +64,10 @@ probe writing and reading one address at a time cannot do.
 
 ## Resets {#resets}
 
-What each of the unit's resets put back. The probe writes a mark into every
-writable address before sending one, so an address a reset leaves alone reads as
-the mark rather than as its own default — which is how *restored*, *left alone*
-and *set to something else* are told apart at all.
+What each of the unit's resets put back. The probe writes a mark into every writable
+address before sending one, so an address a reset leaves alone reads as the mark rather
+than as its own default. That is what tells *restored*, *left alone* and *set to
+something else* apart at all.
 
 ## Window {#window}
 
@@ -92,10 +92,10 @@ Stimulus names are identifiers and are not translated.
 
 ## Repeatability {#repeatability}
 
-How closely two takes of one setting agree. Every audible verdict is read against it:
-a change between two settings has to clear, by a margin, the difference two takes of
-one setting already show, so a unit that repeats badly cannot be read as a parameter
-that does something.
+How closely two takes of one setting agree. Every audible verdict is read against it: a
+change between two settings has to clear, by a margin, the difference two takes of one
+setting already show. A unit that repeats badly cannot be read as a parameter that does
+something.
 
 ## Audible {#audible}
 

@@ -2,11 +2,13 @@
 
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/libraz/soundings-homepage/blob/main/LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-7-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Site](https://img.shields.io/badge/site-soundings.libraz.net-2563eb)](https://soundings.libraz.net)
 [![VitePress](https://img.shields.io/badge/VitePress-1-5c73e7?logo=vite&logoColor=white)](https://vitepress.dev/)
 
 The site that publishes [`soundings`](https://github.com/libraz/soundings) — an archive of
 what hardware MIDI sound modules actually do, measured one unit at a time. Built with
-VitePress.
+VitePress and deployed at <https://soundings.libraz.net>, in English at the root and
+Japanese under `/ja/`.
 
 ## What the site shows
 
@@ -21,6 +23,20 @@ VitePress.
   It answers what was recorded and says *not measured* when a question was never put.
 - **What published documents state**, shown beside the measurement it is about and never
   mixed into it.
+- **What is behind the measurements** — which algorithm a byte is driving, how far
+  identifying it has got, what the reading rests on, and what would show it wrong. Where
+  a model built from it reproduced what the unit did, that model is published as C++,
+  generated from the archive rather than written by hand.
+- **The measurement protocol**, under `/docs/` — copied from the archive's own `docs/`
+  by `yarn sync`, so the pages here are a rendering and the repository next door is where
+  they are edited.
+
+A reading of the measurements is not a measurement, and the site never lets the two read
+as one thing. A claim from the archive's `inferences/` tree carries the archive's own
+state and its own verdict on the model built from it, in the archive's own words. An
+implementation is published only where both closed; a model that was rejected is shown
+as rejected and prints no code. How any of it is arrived at is
+[`/docs/identifying-an-algorithm`](https://soundings.libraz.net/docs/identifying-an-algorithm).
 
 ## The rule everything else follows
 
@@ -29,6 +45,8 @@ here that no record establishes:
 
 - An address is never given a name from a specification. `40 11 30` is described by what
   was measured about it.
+- A name a published manual prints is shown as that manual's statement, with the edition
+  and the printed page beside it, and never as something the unit answered.
 - An absence is rendered as *not measured* — never as zero, blank, or an empty cell.
 - Every verdict, range and emulator reply links to the record that produced it.
 
@@ -93,7 +111,9 @@ longer publishes.
 
 ## Deployment
 
-Cloudflare Pages. Build command `yarn build`, output directory `.vitepress/dist`.
+Cloudflare Pages, serving <https://soundings.libraz.net>. Build command `yarn build`,
+output directory `.vitepress/dist`. Preview hosts carry a `noindex` from
+`src/public/_headers`, so only the production hostname is indexed.
 
 ## License
 

@@ -27,10 +27,10 @@ to `7F`, and that a struck note sounded different at the two ends of that range.
 
 **An absence is not a negative.** An address the archive has nothing for is one no run
 has reached. The site shows that as *not measured*, never as zero, blank, or absent
-from the unit. The distinction matters most where a run stopped early: `40 40 00`
-answers, and the four addresses after it answer, and then the unit went quiet — so
-what the archive holds for that block is a record of a run that stopped, not of a
-block that ends.
+from the unit. The distinction matters most where a run stopped early. `40 40 00`
+answers, the four addresses after it answer, and then the unit goes quiet. What the
+archive holds for that block is a record of a run that stopped, not of a block that
+ends.
 
 **A finding belongs to a unit.** `roland-sc8850-01` is one SC-8850, identified in
 [its own record](https://github.com/libraz/soundings/blob/main/data/units/roland-sc8850-01/meta.json).
@@ -60,11 +60,11 @@ value to the nearest end. *Refuses out of range* leaves the address alone. *Unch
 means the address never moved at all, which makes a clamp and a refusal
 indistinguishable from outside.
 
-**Neighbours** — whether the addresses either side of it are separate addresses. This
-is measured by giving a whole run different values before reading any of them back,
-which is the only way to tell a store from a window: a window answers with whatever it
-was given last, so writing and reading one address at a time makes every window look
-like a store.
+**Neighbours** — whether the addresses either side of it are separate addresses. It is
+measured by giving a whole run different values before reading any of them back, which
+is the only way to tell a store from a window. A window answers with whatever it was
+given last, so writing and reading one address at a time makes every window look like a
+store.
 
 **Reached by** — which MIDI message was measured to land in this address. A control
 change, an NRPN and a system-exclusive write can all reach the same byte. That an
@@ -102,13 +102,41 @@ they are not translated in any language on this site. What each one is — the n
 velocity, how long it was held, what it can see and what it is blind to — is recorded
 in the archive and shown beside it on the observations page.
 
+## What is behind a measurement
+
+A measurement says what a unit answered. It does not say what produced that answer, and
+the archive keeps the two apart. A claim that a particular algorithm is behind a byte
+lives under `inferences/` rather than under `data/`, because it can be wrong while every
+figure it rests on is right.
+
+Those claims are on each unit's algorithms page. Each one carries:
+
+- how far identifying it has got
+- what it rests on
+- what would show it wrong
+- the readings the same evidence still leaves standing
+
+A claim is *identified* only where two things hold: the archive still stands behind it,
+and its own verdict on the model built from it says that model reproduced what the unit
+did. Everything else is *under investigation*, with the reason it is still open beside
+it.
+
+An implementation in C++ is published for an identified claim and for no other, and it
+is generated from the model file rather than written by hand. [How an algorithm is
+identified](/docs/identifying-an-algorithm) is the procedure behind all of that.
+
+Each claim is headed by the name a published manual prints for the effect type it is
+about — the one place on this site where something is called by a name rather than by
+its address. That name is a statement a document makes, so it carries the edition and
+the printed page, and it is never shown as though the unit had answered it.
+
 ## The emulator
 
 The [emulator](/units/roland-sc8850-01/emulator) is a model of the unit's control
 surface built from these same measurements and nothing else. Send it a message and it
-answers the way the archive says the unit answered — including the ways it failed:
-ask it for 256 bytes and it stops responding until you power-cycle it, because that is
-what the unit did.
+answers the way the archive says the unit answered, including the ways it failed. Ask it
+for 256 bytes and it stops responding until you power-cycle it, because that is what the
+unit did.
 
 Where the archive has nothing, the emulator says so instead of producing a plausible
 reply. That restriction is the point of it. A model that filled its gaps in would be a

@@ -2,9 +2,10 @@
 
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/libraz/soundings-homepage/blob/main/LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-7-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Site](https://img.shields.io/badge/site-soundings.libraz.net-2563eb)](https://soundings.libraz.net)
 [![VitePress](https://img.shields.io/badge/VitePress-1-5c73e7?logo=vite&logoColor=white)](https://vitepress.dev/)
 
-[`soundings`](https://github.com/libraz/soundings) を公開するためのサイトです。ハードウェア MIDI 音源が実際に何をするかを、1 台ずつ実測したアーカイブを扱います。VitePress で構築しています。
+[`soundings`](https://github.com/libraz/soundings) を公開するためのサイトです。ハードウェア MIDI 音源が実際に何をするかを、1 台ずつ実測したアーカイブを扱います。VitePress で構築し、<https://soundings.libraz.net> で公開しています。英語がルート、日本語が `/ja/` の下です。
 
 ## このサイトが見せるもの
 
@@ -13,12 +14,17 @@
 - **音色とインサーションエフェクトのカタログ** — 実際にパートが移ったバンクとプログラムの組み合わせ、そして各エフェクトパラメータで音がどう変わったか。
 - **制御面のブラウザエミュレータ** — 測定結果だけで動きます。記録にあることには答え、記録にないことは「未計測」と答えます。
 - **刊行された文書が述べていること** — 対応する測定結果の隣に、混ぜずに並べて示します。
+- **測定の背後にあるもの** — どのバイトがどのアルゴリズムを動かしているか、同定がどこまで進んだか、その読み取りが何を根拠にしているか、何があれば誤りと分かるか。そこから組んだモデルがユニットの挙動を再現している場合は、そのモデルを C++ として公開します。手書きではなくアーカイブから生成したものです。
+- **測定プロトコル** — `/docs/` の下にあります。アーカイブ自身の `docs/` から `yarn sync` が複製したものなので、ここにあるページは表示用で、編集するのは隣のリポジトリです。
+
+測定結果の読み取りは、測定ではありません。このサイトは、その二つを一つのものとして読ませません。アーカイブの `inferences/` にある主張には、アーカイブが付けた状態と、そこから組んだモデルに対する判定が、いずれもアーカイブ自身の言葉のまま付いています。実装例を公開するのは、その両方が閉じているものだけです。棄却されたモデルは棄却されたものとして示し、コードは出しません。どう同定しているかは [`/docs/identifying-an-algorithm`](https://soundings.libraz.net/ja/docs/identifying-an-algorithm) にあります。
 
 ## すべての土台になっている規則
 
 アーカイブが典拠であり、このサイトはその並べ替えにすぎません。記録が裏付けないことは、ここでは一切主張しません。
 
 - アドレスに仕様書由来の名前を与えることはしません。`40 11 30` は、それについて実測されたことで説明します。
+- 刊行されたマニュアルが印刷している名称は、その文書が述べていることとして、版と印刷ページを添えて示します。機体が答えたことのようには示しません。
 - 未計測は「未計測」として表示します。0 や空欄や空のセルで埋めることはしません。
 - すべての判定・範囲・エミュレータの応答は、それを生んだ記録へのリンクを伴います。
 
@@ -74,7 +80,7 @@ yarn test
 
 ## デプロイ
 
-Cloudflare Pages を使います。ビルドコマンドは `yarn build`、出力ディレクトリは `.vitepress/dist` です。
+Cloudflare Pages で <https://soundings.libraz.net> を配信しています。ビルドコマンドは `yarn build`、出力ディレクトリは `.vitepress/dist` です。プレビュー用ホストには `src/public/_headers` から `noindex` が付くので、インデックスされるのは本番のホスト名だけです。
 
 ## ライセンス
 
