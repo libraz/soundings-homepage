@@ -707,11 +707,21 @@ html[lang^='ja'] .vp-doc th {
   color: var(--vp-c-brand-1);
 }
 
+/* The default theme sets an outline entry on one line and cuts what does not
+   fit. A heading here is a sentence — "3. Rendering it, and reading it back the
+   same way" — so four of the six on one page ended in an ellipsis and the rail
+   named nothing a reader could tell apart. Two lines, then the cut. */
 .VPDocAside .outline-link {
   font-family: var(--font-reading);
   font-size: 0.84rem;
   line-height: 1.55;
   padding: 6px 0;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 
 .VPDocAside .outline-marker {
