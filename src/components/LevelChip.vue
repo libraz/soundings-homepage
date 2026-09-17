@@ -11,6 +11,11 @@ import { useI18n } from '../composables/useI18n';
  * four things a *measurement* can be, and how far a reading of several of them
  * reached is a different question with a different shape.
  *
+ * What closed takes the accent, which is the same mark the coverage strip puts
+ * on a type nothing is open on. One fact, one colour, in both places: a chip
+ * and a cell that disagreed about what identification looks like would leave a
+ * reader working out which of them to believe.
+ *
  * `why` is the archive's word for the state it is in — the verdict that closed
  * it, or the thing still open — and is offered on hover rather than printed,
  * because the chip appears in lists where a sentence per row would be the list.

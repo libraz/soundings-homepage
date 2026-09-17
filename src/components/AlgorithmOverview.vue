@@ -62,11 +62,12 @@ const tally = computed(() => {
  * Four marks and not two, because two of them cannot tell apart a type nothing
  * is open on from a type one byte closed on. A claim is about a handful of
  * addresses, and one claim can reach twenty-one types: the rate table alone
- * fills twenty-one of these cells, and it is one byte. A cell filled on that
- * basis would say the type was identified when what closed is a single
- * parameter of it, so the half mark carries "some claim here closed" and the
- * full one is kept for a type with nothing still open. Nothing on this unit
- * reaches the full mark yet, and that is the honest reading rather than a gap.
+ * fills twenty-one of these cells, and it is one byte. A cell at full strength
+ * earned that way would say the type was identified when what closed is a
+ * single parameter of it, so the middle step carries "some claim here closed"
+ * and full strength is kept for a type with nothing still open. Nothing on this
+ * unit reaches full strength yet, and that is the honest reading rather than a
+ * gap in the data.
  */
 /** Every claim that reaches a type, the ones that closed first. */
 const claimsByType = computed(() => {

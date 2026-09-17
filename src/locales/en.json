@@ -377,7 +377,7 @@
     "printedAs": "Named after",
     "addresses": "Addresses",
     "coverage": "Where identification has reached",
-    "coverageLede": "One cell per insertion effect type the unit answers with. A claim is about a handful of addresses and one claim can reach many types, so a cell says what the claims reaching that type add up to and never that the type itself is worked out. Filled: nothing about it is still open. Half: some claim reaching it closed and some has not. Ringed: a claim reaches it and none has closed. Empty: nothing has been claimed about it. The cells are ink rather than colour, because the four hues on this site stand for the four things a measurement can be, and how far a reading of one got is not one of them.",
+    "coverageLede": "One cell per insertion effect type the unit answers with. A claim is about a handful of addresses and one claim can reach many types, so a cell says what the claims reaching that type add up to and never that the type itself is worked out. The depth of the accent is how much of a type closed: at full strength nothing about it is still open, at the middle step some claim reaching it closed and some has not, and at the faintest a claim reaches it and none has closed. A hairline is a type nothing has been claimed about. The accent says one thing only, that a model was compared and it closed; it is not a fifth measurement colour, and the four hues on this site never appear on this strip.",
     "reached": "{claimed} of {total} types carry a claim",
     "noClaim": "nothing claimed",
     "claims": "The claims",

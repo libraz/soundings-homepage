@@ -515,10 +515,12 @@ a.sg-cell:focus-visible,
   box-shadow: inset 0 0 0 1px currentColor;
 }
 
-/* The model closed. Filled, and set in the readout's own ink at full strength:
-   it is the one state on these pages that carries an implementation. */
+/* The model closed. Filled, and in the accent: the same mark the strip uses for
+   the same fact, so the chip beside a claim and the cell on the map above it
+   cannot drift apart. It is the one state on these pages that carries an
+   implementation, and the only one the accent is spent on. */
 .sg-level--identified {
-  color: var(--sg-readout);
+  color: var(--sg-accent-600);
   font-weight: 500;
 }
 
@@ -543,32 +545,44 @@ a.sg-cell:focus-visible,
 }
 
 /* The marks for the strip that shows where identification has reached across a
-   unit's effect types. Ink at three strengths, never a hue: how far a reading
-   got is not one of the four things a measurement can be. */
+   unit's effect types.
+
+   The accent carries one meaning and only one: a model rendered from a claim
+   here was compared and closed. It is not a fifth measurement colour and must
+   never appear inside a HexGrid — the four hues stand for the four things a
+   measurement can be, and this says something about a reading of them rather
+   than about a reading. Keeping it to the single meaning is what stops the
+   strip's teal from being read as a fifth answer the unit could give.
+
+   Every cell is a filled square and the depth of the accent is the whole of
+   the distinction, the way `--1`…`--4` is a ramp of the readout's own ink. One
+   hue at three strengths rather than three hues: the step between them is how
+   much of a type closed, which is a quantity, and a quantity drawn in three
+   unrelated colours reads as three unrelated things. `--sg-accent-500` is
+   defined per theme, so mixing it against transparent gives the same three
+   steps over a light panel and a dark one. */
 
 /* Nothing about this type is still open. */
 .sg-cell.sg-cell--identified {
-  background: color-mix(in srgb, var(--sg-readout) 70%, transparent);
+  background: var(--sg-accent-500);
 }
 
-/* Some claim reaching this type closed and some has not. Half the square,
-   because half is what it is: one claim can reach twenty-one types while being
-   about a single byte, and a full mark earned that way would say the type was
-   worked out. Split rather than shaded, so it cannot be read as a fourth
-   strength of the depth ramp. */
+/* Some claim reaching this type closed and some has not. The middle step,
+   because that is what it is: one claim can reach twenty-one types while being
+   about a single byte, and the full strength earned that way would say the type
+   was worked out. */
 .sg-cell.sg-cell--partial {
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--sg-readout) 70%, transparent) 50%,
-    color-mix(in srgb, var(--sg-readout) 7%, transparent) 50%
-  );
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sg-readout) 42%, transparent);
+  background: color-mix(in srgb, var(--sg-accent-500) 62%, transparent);
 }
 
-/* A claim reaches this type and none of them has closed. */
+/* A claim reaches this type and none of them has closed. Thirty-four of the
+   sixty-five cells are this one, so it is the step that decides whether the
+   strip reads at all: at a fifth of the accent it all but vanished against a
+   light panel. The three steps are spaced to land about evenly apart in both
+   themes rather than at round numbers — a ramp standing for a quantity has to
+   look like equal steps, and equal percentages of a mix are not equal steps. */
 .sg-cell.sg-cell--claimed {
-  background: color-mix(in srgb, var(--sg-readout) 7%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sg-readout) 42%, transparent);
+  background: color-mix(in srgb, var(--sg-accent-500) 34%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {
