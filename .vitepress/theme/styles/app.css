@@ -70,8 +70,17 @@ html[lang^='ja'] {
    paragraph and wrong on a table of 128 addresses, on a segmented selector,
    and on a row of measurement citations — there it draws a broken rule under
    every control on the page. Application pages opt out wholesale and their
-   components style their own links. */
-:where(.page-app, .page-landing) .vp-doc a {
+   components style their own links.
+
+   The hover state is named here as well, and has to be. `:where()` carries no
+   specificity, so the opt-out weighs exactly what `.vp-doc a` does and beats it
+   only on order — while `docs.css`'s `.vp-doc a:hover` outranks both and put the
+   line back the moment the cursor arrived. The position is fixed at 1.05em from
+   the top of the box, so on a link that is one line tall it looked like an
+   underline and on the two-line rows of the claim index it drew a rule straight
+   through the middle of the first line. */
+:where(.page-app, .page-landing) .vp-doc a,
+:where(.page-app, .page-landing) .vp-doc a:hover {
   background-image: none;
 }
 

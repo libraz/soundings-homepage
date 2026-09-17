@@ -218,6 +218,19 @@ body {
   color: var(--color-text-tertiary);
 }
 
+/* The same mark, set for the script it is in.
+   Ten pixels and 0.16em of tracking is a Latin small-caps label: the capitals
+   are five or six strokes each and the space between them is what makes a word
+   of them. A fullwidth glyph at that size is a dozen strokes in the same box,
+   and the tracking pulls 「この組み合わせはあるか」 apart into single characters.
+   Japanese therefore takes a step up in size and most of the tracking back;
+   `text-transform` does nothing to kana either way. */
+html[lang^='ja'] .sg-label,
+html[lang^='ja'] .vp-doc .sg-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+}
+
 /* Anything the unit itself said: an address, a byte, a frame. */
 .sg-readout,
 .vp-doc .sg-readout {
@@ -251,21 +264,27 @@ body {
   flex: none;
 }
 
-.sg-state--heard {
+/* Two classes, for the reason the matrix cells below are written the same way.
+   The base above is paired with `.vp-doc` so the reading surface cannot reach
+   in, and that pairing outranks a one-class modifier — so on every page that
+   mounts inside `.vp-doc`, which is all of them, the base's fallback of silent
+   won and a chip said "silent" whatever had been measured. A catalogue of 1,286
+   parameters and a block of 128 offsets came out in one grey. */
+.sg-state.sg-state--heard {
   --sg-state-color: var(--sg-heard);
 }
-.sg-state--silent {
+.sg-state.sg-state--silent {
   --sg-state-color: var(--sg-silent);
 }
-.sg-state--refused {
+.sg-state.sg-state--refused {
   --sg-state-color: var(--sg-refused);
 }
-.sg-state--unasked {
+.sg-state.sg-state--unasked {
   --sg-state-color: var(--sg-unasked);
 }
 
 /* An unasked question is drawn hollow: there is nothing filling it in. */
-.sg-state--unasked::before {
+.sg-state.sg-state--unasked::before {
   background: transparent;
   box-shadow: inset 0 0 0 1px currentColor;
 }
@@ -463,23 +482,31 @@ a.sg-cell:focus-visible,
   list-style: none;
 }
 
-.sg-key li {
+/* Paired with `.vp-doc` for the reason the primitives above are. An entry is an
+   `li`, and `.vp-doc li` sets the reading size and the reading face on one class
+   and one element — exactly what `.sg-key li` weighs — so the legend came out at
+   16px beside marks 11px across, three times the size of the thing it names. */
+.sg-key li,
+.vp-doc .sg-key li {
   display: flex;
   align-items: center;
   gap: 0.45em;
   font-family: var(--font-mono);
   font-size: 0.68rem;
+  line-height: 1.5;
   letter-spacing: 0.02em;
   color: var(--color-text-tertiary);
 }
 
-.sg-key .sg-cell {
+.sg-key .sg-cell,
+.vp-doc .sg-key .sg-cell {
   width: 0.72rem;
   flex: none;
 }
 
 /* The depth ramp is one item, not four: it is a single fact about the fill. */
-.sg-key__ramp {
+.sg-key__ramp,
+.vp-doc .sg-key__ramp {
   display: flex;
   gap: 2px;
 }
@@ -515,32 +542,37 @@ a.sg-cell:focus-visible,
   box-shadow: inset 0 0 0 1px currentColor;
 }
 
+/* Two classes, as the state chips and the matrix cells are: the base is paired
+   with `.vp-doc` and that pairing outranks a one-class modifier, so left at one
+   class every level came out at the base's tertiary ink — the chip on a claim
+   that closed and the chip on one still open were the same mark, and the accent
+   the strip above them spends on exactly this fact never reached the list. */
 /* The model closed. Filled, and in the accent: the same mark the strip uses for
    the same fact, so the chip beside a claim and the cell on the map above it
    cannot drift apart. It is the one state on these pages that carries an
    implementation, and the only one the accent is spent on. */
-.sg-level--identified {
+.sg-level.sg-level--identified {
   color: var(--sg-accent-600);
   font-weight: 500;
 }
 
-.sg-level--identified::before {
+.sg-level.sg-level--identified::before {
   background: currentColor;
   box-shadow: none;
 }
 
 /* Still open. Hollow, which is the mark this site uses for a question that has
    not been answered rather than one answered in the negative. */
-.sg-level--investigating {
+.sg-level.sg-level--investigating {
   color: var(--color-text-secondary);
 }
 
 /* Out of the running, each for its own reason. Set back rather than struck: the
    claim is still on the page and still worth reading, and a strike would say it
    had been erased. */
-.sg-level--parked,
-.sg-level--retracted,
-.sg-level--superseded {
+.sg-level.sg-level--parked,
+.sg-level.sg-level--retracted,
+.sg-level.sg-level--superseded {
   color: var(--color-text-muted);
 }
 
