@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import type { AlgorithmShard } from '../composables/useArchive';
 import { useArchiveFile } from '../composables/useArchive';
 import { useI18n } from '../composables/useI18n';
+import ArchiveProse from './ArchiveProse.vue';
 import ByteMapChart from './ByteMapChart.vue';
 import ClaimTitle from './ClaimTitle.vue';
 import DocumentLink from './DocumentLink.vue';
@@ -28,7 +29,7 @@ import RecordLink from './RecordLink.vue';
  */
 const props = defineProps<{ unitId: string; id: string }>();
 
-const { t, claimed, claimedIsQuoted, verbatim, route, locale } = useI18n();
+const { t, claimedIsQuoted, claimedProse, verbatimProse, route, locale } = useI18n();
 
 const { data, error, loading } = useArchiveFile<AlgorithmShard>(
   () => `${props.unitId}/algorithms/${props.id}.json`,
@@ -229,38 +230,52 @@ const domain = computed(() => {
 
       <section class="panel sg-panel">
         <h2 class="sg-label panel__head">{{ t('algorithms.claim') }}</h2>
-        <p class="prose" :class="{ 'sg-quoted': claimedIsQuoted(data.claim) }">
-          {{ claimed(data.claim) }}
-        </p>
+        <ArchiveProse
+          class="prose"
+          :class="{ 'sg-quoted': claimedIsQuoted(data.claim) }"
+          :runs="claimedProse(data.claim)"
+        />
 
         <template v-if="data.named">
           <h3 class="sg-label panel__sub">{{ t('algorithms.named') }}</h3>
-          <p class="prose" :class="{ 'sg-quoted': claimedIsQuoted(data.named) }">
-            {{ claimed(data.named) }}
-          </p>
+          <ArchiveProse
+            class="prose"
+            :class="{ 'sg-quoted': claimedIsQuoted(data.named) }"
+            :runs="claimedProse(data.named)"
+          />
         </template>
         <template v-else-if="data.whyNotNamed">
           <h3 class="sg-label panel__sub">{{ t('algorithms.notNamed') }}</h3>
           <p class="panel__lede">{{ t('algorithms.notNamedBody') }}</p>
-          <p class="prose" :class="{ 'sg-quoted': quoting }">{{ verbatim(data.whyNotNamed) }}</p>
+          <ArchiveProse
+            class="prose"
+            :class="{ 'sg-quoted': quoting }"
+            :runs="verbatimProse(data.whyNotNamed)"
+          />
         </template>
 
         <h3 class="sg-label panel__sub">{{ t('algorithms.adds') }}</h3>
         <p class="panel__lede">{{ t('algorithms.addsBody') }}</p>
-        <p class="prose" :class="{ 'sg-quoted': claimedIsQuoted(data.adds) }">
-          {{ claimed(data.adds) }}
-        </p>
+        <ArchiveProse
+          class="prose"
+          :class="{ 'sg-quoted': claimedIsQuoted(data.adds) }"
+          :runs="claimedProse(data.adds)"
+        />
 
         <h3 class="sg-label panel__sub">{{ t('algorithms.refutedBy') }}</h3>
-        <p class="prose" :class="{ 'sg-quoted': claimedIsQuoted(data.refutedBy) }">
-          {{ claimed(data.refutedBy) }}
-        </p>
+        <ArchiveProse
+          class="prose"
+          :class="{ 'sg-quoted': claimedIsQuoted(data.refutedBy) }"
+          :runs="claimedProse(data.refutedBy)"
+        />
 
         <template v-if="data.couldHaveBeenRefutedBy">
           <h3 class="sg-label panel__sub">{{ t('algorithms.couldHaveBeenRefutedBy') }}</h3>
-          <p class="prose" :class="{ 'sg-quoted': quoting }">
-            {{ verbatim(data.couldHaveBeenRefutedBy) }}
-          </p>
+          <ArchiveProse
+            class="prose"
+            :class="{ 'sg-quoted': quoting }"
+            :runs="verbatimProse(data.couldHaveBeenRefutedBy)"
+          />
         </template>
       </section>
 
@@ -357,7 +372,11 @@ const domain = computed(() => {
           </dl>
           <template v-if="domain.outside">
             <h4 class="sg-label panel__sub">{{ t('algorithms.outside') }}</h4>
-            <p class="prose" :class="{ 'sg-quoted': quoting }">{{ verbatim(domain.outside) }}</p>
+            <ArchiveProse
+              class="prose"
+              :class="{ 'sg-quoted': quoting }"
+              :runs="verbatimProse(domain.outside)"
+            />
           </template>
         </template>
 
@@ -377,18 +396,24 @@ const domain = computed(() => {
           <p class="panel__lede">
             {{ residual.structured ? t('algorithms.structured') : t('algorithms.unstructured') }}
           </p>
-          <p v-if="residual.why" class="prose" :class="{ 'sg-quoted': quoting }">
-            {{ verbatim(residual.why) }}
-          </p>
+          <ArchiveProse
+            v-if="residual.why"
+            class="prose"
+            :class="{ 'sg-quoted': quoting }"
+            :runs="verbatimProse(residual.why)"
+          />
         </template>
 
         <dl v-if="residualExtra.length" class="notes">
           <template v-for="note in residualExtra" :key="note.key">
             <dt class="sg-label">{{ note.key }}</dt>
             <dd>
-              <p v-if="note.prose" class="prose" :class="{ 'sg-quoted': quoting }">
-                {{ verbatim(note.prose) }}
-              </p>
+              <ArchiveProse
+                v-if="note.prose"
+                class="prose"
+                :class="{ 'sg-quoted': quoting }"
+                :runs="verbatimProse(note.prose)"
+              />
               <ul v-else-if="note.rows" class="figures figures--rows">
                 <li v-for="row in note.rows" :key="row.key" class="figures__item">
                   <span class="sg-label">{{ row.key }}</span>
@@ -423,9 +448,12 @@ const domain = computed(() => {
                   <span class="sg-readout">{{ value }}</span>
                 </li>
               </ul>
-              <p v-if="gate.why" class="prose prose--small" :class="{ 'sg-quoted': quoting }">
-                {{ verbatim(gate.why) }}
-              </p>
+              <ArchiveProse
+                v-if="gate.why"
+                class="prose prose--small"
+                :class="{ 'sg-quoted': quoting }"
+                :runs="verbatimProse(gate.why)"
+              />
             </li>
           </ul>
         </template>
@@ -469,15 +497,25 @@ const domain = computed(() => {
           <p class="panel__lede">{{ t('algorithms.eraPriorsBody') }}</p>
           <ul class="priors">
             <li v-for="(prior, index) in data.grounds.eraPriors" :key="index" class="prior">
-              <p class="prose" :class="{ 'sg-quoted': quoting }">{{ verbatim(prior.claim) }}</p>
-              <p v-if="prior.why" class="prose prose--small" :class="{ 'sg-quoted': quoting }">
-                {{ verbatim(prior.why) }}
-              </p>
+              <ArchiveProse
+                class="prose"
+                :class="{ 'sg-quoted': quoting }"
+                :runs="verbatimProse(prior.claim)"
+              />
+              <ArchiveProse
+                v-if="prior.why"
+                class="prose prose--small"
+                :class="{ 'sg-quoted': quoting }"
+                :runs="verbatimProse(prior.why)"
+              />
               <p v-if="prior.wouldBeWrongIf" class="prior__wrong">
                 <span class="sg-label">{{ t('algorithms.wouldBeWrongIf') }}</span>
-                <span class="prose prose--small" :class="{ 'sg-quoted': quoting }">
-                  {{ verbatim(prior.wouldBeWrongIf) }}
-                </span>
+                <ArchiveProse
+                  tag="span"
+                  class="prose prose--small"
+                  :class="{ 'sg-quoted': quoting }"
+                  :runs="verbatimProse(prior.wouldBeWrongIf)"
+                />
               </p>
             </li>
           </ul>
@@ -488,7 +526,11 @@ const domain = computed(() => {
           <p class="panel__lede">{{ t('algorithms.communityBody') }}</p>
           <ul class="priors">
             <li v-for="(entry, index) in data.grounds.community" :key="index" class="prior">
-              <p class="prose" :class="{ 'sg-quoted': quoting }">{{ verbatim(entry.claim) }}</p>
+              <ArchiveProse
+                class="prose"
+                :class="{ 'sg-quoted': quoting }"
+                :runs="verbatimProse(entry.claim)"
+              />
               <p class="prior__wrong">
                 <span class="sg-label">{{ t('algorithms.traceableTo') }}</span>
                 <span class="sg-readout">{{ entry.traceableTo }}</span>
@@ -517,13 +559,20 @@ const domain = computed(() => {
                 {{ alternative.candidate }}
               </span>
             </p>
-            <p class="prose" :class="{ 'sg-quoted': quoting }">{{ verbatim(alternative.reading) }}</p>
+            <ArchiveProse
+              class="prose"
+              :class="{ 'sg-quoted': quoting }"
+              :runs="verbatimProse(alternative.reading)"
+            />
             <p v-if="alternative.equivalent" class="panel__lede">{{ t('algorithms.equivalentHere') }}</p>
             <p v-if="alternative.ruledOutBy" class="prior__wrong">
               <span class="sg-label">{{ t('algorithms.ruledOutBy') }}</span>
-              <span class="prose prose--small" :class="{ 'sg-quoted': quoting }">
-                {{ verbatim(alternative.ruledOutBy) }}
-              </span>
+              <ArchiveProse
+                tag="span"
+                class="prose prose--small"
+                :class="{ 'sg-quoted': quoting }"
+                :runs="verbatimProse(alternative.ruledOutBy)"
+              />
             </p>
           </li>
         </ul>
@@ -536,7 +585,11 @@ const domain = computed(() => {
           <template v-for="note in data.extra" :key="note.key">
             <dt class="sg-label">{{ note.key }}</dt>
             <dd>
-              <p class="prose" :class="{ 'sg-quoted': quoting }">{{ verbatim(note.text) }}</p>
+              <ArchiveProse
+                class="prose"
+                :class="{ 'sg-quoted': quoting }"
+                :runs="verbatimProse(note.text)"
+              />
             </dd>
           </template>
         </dl>
@@ -688,19 +741,23 @@ const domain = computed(() => {
 
 .panel__lede {
   margin: 0 0 var(--space-3);
-  max-width: var(--sg-measure-wide);
+  max-width: var(--sg-measure);
   font-size: 0.8rem;
   line-height: 1.7;
   color: var(--color-text-tertiary);
 }
 
-/* The site's own measure for sustained prose. A claim, its lede and a gate's
-   reason all take it, so that three sizes of text inside one panel land on one
-   column rather than on three — wrapped at three widths they read as three
-   unrelated blocks. */
+/* The site's own measure for sustained prose — `--sg-measure`, the one set for
+   reading line after line, and not the wide one a page's opening sentence
+   takes. A claim runs to seventeen lines, and at the wide measure those lines
+   were a hundred and fifty characters each: the eye tracking back from the end
+   of one lands two lines down. A claim, its lede and a gate's reason all take
+   this one, so that three sizes of text inside one panel land on one column
+   rather than on three — wrapped at three widths they read as three unrelated
+   blocks. */
 .prose {
   margin: 0 0 var(--space-3);
-  max-width: var(--sg-measure-wide);
+  max-width: var(--sg-measure);
   font-size: 0.9rem;
   line-height: 1.8;
   color: var(--color-text-secondary);

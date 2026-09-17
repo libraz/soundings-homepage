@@ -4,6 +4,7 @@ import en from '../locales/en.json';
 import ja from '../locales/ja.json';
 import vocabEn from '../locales/vocab.en.json';
 import vocabJa from '../locales/vocab.ja.json';
+import { dashed, type ProseRun, plainProse, proseRuns } from './prose';
 
 type Strings = typeof en;
 type Vocabulary = typeof vocabEn;
@@ -20,18 +21,6 @@ function toLocale(lang: string): string {
 /** Walk a dotted key, e.g. `address.powerOn`. */
 function lookup(table: unknown, path: string): unknown {
   return path.split('.').reduce<any>((node, key) => (node == null ? undefined : node[key]), table);
-}
-
-/**
- * The archive writes its prose in ASCII, and an em dash in it is ` -- `.
- *
- * That is the record's convention and the record keeps it: JSON that a script
- * greps and a person reads in a terminal is better off without characters that
- * depend on the terminal. It is a typographic convention rather than content,
- * so it is undone here, where the text is being set rather than stored.
- */
-function dashed(sentence: string): string {
-  return sentence.replace(/ -- /g, ' — ');
 }
 
 function interpolate(template: string, values: Record<string, unknown>): string {
@@ -128,7 +117,7 @@ export function useI18n() {
    * it was written in rather than disappearing — `yarn check:vocab` lists those.
    */
   function note(sentence: string | null | undefined): string {
-    return quoting('notes', sentence).text;
+    return plainProse(quoting('notes', sentence).text);
   }
 
   /** Whether `note()` had to fall back to the archive's own language. */
@@ -147,7 +136,7 @@ export function useI18n() {
    * English.
    */
   function stated(sentence: string | null | undefined): string {
-    return quoting('documents', sentence).text;
+    return plainProse(quoting('documents', sentence).text);
   }
 
   /** Whether `stated()` had to fall back to the language it was written in. */
@@ -167,7 +156,7 @@ export function useI18n() {
    * it by meeting English halfway down a Japanese page.
    */
   function claimed(sentence: string | null | undefined): string {
-    return quoting('inferences', sentence).text;
+    return plainProse(quoting('inferences', sentence).text);
   }
 
   /** Whether `claimed()` had to fall back to the language it was written in. */
@@ -176,13 +165,30 @@ export function useI18n() {
   }
 
   /**
+   * The same statement, set the way the record wrote it.
+   *
+   * A claim states a whole structure and the record heads each part of it with
+   * the sentence that part turns on, so the page that reads it in full sets
+   * that sentence apart. Everywhere else — a heading, a catalogue row, a search
+   * haystack — `claimed()` gives the same statement as plain text.
+   */
+  function claimedProse(sentence: string | null | undefined): ProseRun[] {
+    return proseRuns(quoting('inferences', sentence).text);
+  }
+
+  /**
    * A sentence the archive wrote that this site never translates.
    *
-   * The dashes are still undone, because that is typesetting rather than
+   * The typesetting is still undone, because that is typesetting rather than
    * content, and nothing else is touched.
    */
   function verbatim(sentence: string | null | undefined): string {
-    return sentence ? dashed(sentence) : '';
+    return sentence ? plainProse(dashed(sentence)) : '';
+  }
+
+  /** The same sentence, set the way the record wrote it. */
+  function verbatimProse(sentence: string | null | undefined): ProseRun[] {
+    return sentence ? proseRuns(dashed(sentence)) : [];
   }
 
   function quoting(bucket: string, sentence: string | null | undefined) {
@@ -220,7 +226,9 @@ export function useI18n() {
     statedIsQuoted,
     claimed,
     claimedIsQuoted,
+    claimedProse,
     verbatim,
+    verbatimProse,
     resetOutcome,
     stimulus,
     asset,
