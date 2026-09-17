@@ -668,8 +668,12 @@
           "title": "Stereo Delay — HF Damp"
         },
         {
+          "id": "0173-two-noise-low-passes-index-one-table",
+          "title": "Lo-Fi 2 — Cutoff / W/P LPF / Disc LPF"
+        },
+        {
           "id": "amp-four-fixed-curves-after-the-drive-stage",
-          "title": "Overdrive · Distortion · OD1 / OD2"
+          "title": "Overdrive · Distortion · OD1 / OD2 +3"
         },
         {
           "id": "azimuth-a-byte-rounded-to-a-quarter-and-clamped",
@@ -681,7 +685,7 @@
         },
         {
           "id": "defaults-every-parameter-powers-up-where-its-page-says",
-          "title": null
+          "title": "Phaser · Auto Wah · Rotary +48"
         },
         {
           "id": "freq-the-byte-indexes-a-third-octave-table",
@@ -713,10 +717,10 @@
         },
         {
           "id": "wave-the-byte-picks-one-of-five-fixed-shapes",
-          "title": "Tremolo · Auto Pan"
+          "title": "Tremolo · Auto Pan · Rhodes Multi"
         }
       ],
-      "archiveBytes": 68667955,
+      "archiveBytes": 69626409,
       "catalogues": {
         "tones": true,
         "effects": true,
