@@ -45,8 +45,16 @@ interface ToneCatalogue {
 
 const { data, error, loading } = useArchiveFile<ToneCatalogue>(() => `${props.unitId}/tones.json`);
 
-function programs(ranges: ProgramRange[]): string {
-  return ranges.map(([from, to]) => (from === to ? String(from) : `${from}–${to}`)).join(', ');
+/**
+ * The ranges a bank answered, one string each.
+ *
+ * Kept as a list rather than joined into a sentence: a bank runs to thirty of
+ * them, and set as prose separated by commas they are a hundred and twenty
+ * digits with nothing in them for the eye to stop at. The layout puts each in a
+ * column of its own instead, which is what makes a run of them readable.
+ */
+function programs(ranges: ProgramRange[]): string[] {
+  return ranges.map(([from, to]) => (from === to ? String(from) : `${from}–${to}`));
 }
 
 function tonesIn(map: ToneMap): number {
@@ -203,8 +211,8 @@ const lookup = computed(() => {
           <table class="banks">
             <thead>
               <tr>
-                <th class="sg-label" scope="col">{{ t('tones.bank') }}</th>
-                <th class="sg-label" scope="col">{{ t('tones.count') }}</th>
+                <th class="sg-label banks__bank" scope="col">{{ t('tones.bank') }}</th>
+                <th class="sg-label banks__count" scope="col">{{ t('tones.count') }}</th>
                 <th class="sg-label" scope="col">{{ t('tones.programs') }}</th>
               </tr>
             </thead>
@@ -212,7 +220,11 @@ const lookup = computed(() => {
               <tr v-for="bank in map.banks" :key="bank.bank">
                 <td class="sg-readout banks__bank">{{ bank.bank }}</td>
                 <td class="sg-readout banks__count">{{ bank.tones }}</td>
-                <td class="sg-readout banks__programs">{{ programs(bank.programs) }}</td>
+                <td class="sg-readout banks__programs">
+                  <span v-for="range in programs(bank.programs)" :key="range" class="banks__range">
+                    {{ range }}
+                  </span>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -408,7 +420,10 @@ const lookup = computed(() => {
 
 .banks th,
 .banks td {
-  padding: 0.3rem var(--space-5);
+  /* Loose enough that a row wrapping to three lines still reads as one row.
+     At the 0.3rem this was, a bank of thirty ranges closed the gap to the rule
+     above it and two rows became one block of digits. */
+  padding: 0.45rem var(--space-5);
   text-align: left;
   vertical-align: baseline;
   border: 0;
@@ -424,12 +439,42 @@ const lookup = computed(() => {
   border-top: 1px solid var(--sg-rule-soft);
 }
 
-.banks__bank,
-.banks__count {
+/* The same mark the bank tables on the map page carry: a row that wraps is
+   longer than the eye tracks, and the tint says which one it is on. */
+.banks tbody tr:hover td {
+  background: color-mix(in srgb, var(--vp-c-brand-1) 5%, transparent);
+}
+
+/* Both narrow columns are given a width rather than left to their headings, so
+   the ranges start at the same place in all five tables and a reader moving
+   between them is not re-finding the column each time. */
+/* Written against `td` so the heading above keeps the label's own size: both
+   rules are two selectors' worth of weight, and a bare class here set the
+   column heading at reading size in the row's face. */
+td.banks__bank,
+td.banks__count {
   font-size: 0.875rem;
 }
 
+.banks__bank {
+  width: 4.5rem;
+}
+
+/* A count, so it is set against the column's right edge — heading included, or
+   the two would name the same column from different places. The figures line up
+   under each other and the size of a bank is read down the column. */
 .banks__count {
+  width: 5rem;
+}
+
+/* An element as well as the class, to sit level with the `.banks th, .banks td`
+   rule above that sets every column left. */
+th.banks__count,
+td.banks__count {
+  text-align: right;
+}
+
+td.banks__count {
   color: var(--color-text-secondary);
 }
 
@@ -442,6 +487,20 @@ td.banks__programs {
   font-size: 0.8125rem;
   line-height: 1.6;
   color: var(--color-text-secondary);
+}
+
+/* A grid of fixed columns rather than a comma-separated sentence. Every range
+   gets the same cell, so they line up down the table as well as across it and a
+   bank's runs can be counted instead of read; the gap is the separator, since a
+   comma at this density is one more mark to sort out from the digits.
+
+   `auto-fill` rather than a stated count: the column that holds this is what is
+   left of the panel, and the number of ranges that fit is a different number on
+   a laptop and on a phone. */
+.banks__programs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4.6em, 1fr));
+  gap: 0.15rem 0.6rem;
 }
 
 @media (max-width: 640px) {
