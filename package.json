@@ -28,7 +28,7 @@
     "verify": "yarn check && yarn test && yarn build"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.12",
+    "@biomejs/biome": "^2.5.13",
     "@types/node": "^26.4.1",
     "@vitejs/plugin-vue": "^6",
     "@vue/compiler-dom": "^3.5.42",
@@ -37,7 +37,7 @@
     "npm-check-updates": "^23.1.0",
     "shiki": "^2.5.0",
     "typescript": "^7.0.2",
-    "vite": "^8.2.2",
+    "vite": "^8.3.0",
     "vitepress": "^1.6.4",
     "vitest": "^5",
     "vue": "^3.5.42"

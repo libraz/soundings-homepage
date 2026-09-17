@@ -2,6 +2,12 @@
 # so proposing them here would only produce an uninstallable package.json.
 cooldown: 1d
 
-# Packages pinned below their latest release. Empty: every dependency currently
-# builds and passes `yarn verify` at its newest version.
-reject: []
+# Packages pinned below their latest release. Drop an entry once its blocker is
+# gone so the next run picks the package up again.
+reject:
+  # shiki: the sync-time highlighter has to be the one VitePress highlights its
+  # own fences with, or a generated example stops reading like a docs code
+  # block. vitepress 1.6.4 asks for ^2.1.0, so taking v4 here would resolve two
+  # copies and highlight the two surfaces with different versions. Raise it when
+  # vitepress's own range moves.
+  - shiki
