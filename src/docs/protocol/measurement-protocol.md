@@ -148,8 +148,18 @@ message goes. `--one-at-a-time` holds only what a single read answers, each its
 own region: a reply to a single read is answered for the address it was asked
 about or not at all, so no byte in it can land on the address below its own.
 
+A block this unit's records name as answering a region read with its first byte
+and zeros after it is put in one address at a time, however the rest of the map is
+asked, and the map says which blocks those were. The blocks are read from the
+records and held nowhere in the code: which ones answer that way is one unit's
+answer, and a list of them beside the builder would arrive at the next unit as an
+assumption about it.
+
 Nothing here is measured, and the file says so. It is rebuilt from the unit's own
-records whenever those change, and it names them.
+records whenever those change, and it names them -- so a stage that has just
+learnt something about how a block answers rebuilds the map before it runs again.
+The command takes no unit and holds none, so it can be rebuilt while the hardware
+is busy with something else.
 
 ### 5. Power-on state
 
@@ -172,6 +182,25 @@ when the same block is asked an offset at a time. Such a reply cannot be laid
 down over the addresses asked for, so it is refused and the region is recorded as
 answered short. The baseline is the union of the two captures, and `soundings
 complete` counts it that way.
+
+**A reply of the length that was asked for can still hold one byte of data.** Two
+blocks of that same unit answer a region read with a reply as long as the request
+and a checksum that verifies, carrying the value of the address it starts at and
+00 in every byte after it -- while all 128 offsets of each block, asked one at a
+time, answer with their own offset. At every length from two to sixty-four, and a
+block beside them answers all of those lengths in full, so a region read of these
+two reaches exactly one address whichever it starts at. Nothing refuses a reply like that, since the
+length is what makes a short one refusable, so every byte of it is published as a
+value; and where the region's first byte is 00 anyway there is nothing to see.
+What makes it visible is the comparison and not the run: hold every value in a
+region capture against a single-byte read of the same address. On this unit that
+is 37240 addresses, 220 of them disagree, and all 220 are in those two blocks.
+
+**Do that comparison before a later stage rests on either capture.** A reset probe
+took its baseline from the region read and chose each mark against a single read,
+which wrote the baseline's own value into 220 of the 224 addresses it marked
+there. All three resets came back restoring every one of them, which is the only
+answer that comparison could return.
 
 **This is the last stage that may be run before a stage that writes.** Stages 1
 to 4 send reads or nothing at all, so the capture is still a power-on capture
