@@ -145,7 +145,9 @@ const entries = computed(() => [
       <p class="strip__reading">{{ coverage }}</p>
     </section>
 
-    <section class="entries">
+    <!-- The column count is the entry count, so adding one to the list above is
+         the whole of adding it to the lattice. -->
+    <section class="entries" :style="{ '--entries': entries.length }">
       <a v-for="entry in entries" :key="entry.key" class="entry" :href="entry.href">
         <h2 class="entry__title">{{ entry.title }}</h2>
         <p class="entry__body">{{ entry.body }}</p>
@@ -300,11 +302,12 @@ const entries = computed(() => [
    their own border double it wherever two meet — the negative margin that hid
    that for a single row put the seam in the wrong place as soon as there were
    two. A gap is one line however the grid breaks. */
-/* Four columns, then two, then one — never three with a gap where the fourth
-   would be. `auto-fit` counts how many fit and stops there, which at a desktop
-   width just under the full measure is three, and the fourth card sat alone
-   against an empty plate. There are four entries and the number is fixed here,
-   so the breaks are too. */
+/* One column, then two, then one column per entry — never a count that leaves a
+   cell empty. `auto-fit` counts how many fit and stops there, which at a desktop
+   width just under the full measure is one short, and the last card sat alone
+   against an empty plate. The wide count is the number of entries, taken from
+   the list itself: written as a number it went stale the first time one was
+   added, and a fifth card spent a release beside three empty plates. */
 .entries {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -347,9 +350,19 @@ const entries = computed(() => [
   color: var(--color-text-secondary);
 }
 
-@media (min-width: 60rem) {
+/* Two columns and an odd number of entries leave the last one alone on its row.
+   It takes the row rather than the half of it, which is the same rule the wide
+   layout follows: a plate is either a card or it is not there. */
+.entry:nth-child(odd):last-child {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 72rem) {
   .entries {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--entries, 4), minmax(0, 1fr));
+  }
+  .entry:nth-child(odd):last-child {
+    grid-column: auto;
   }
 }
 
