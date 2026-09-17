@@ -395,14 +395,20 @@ const blockNoun = computed(() => t('map.block', { block: '' }).trim());
   color: var(--color-text-tertiary);
 }
 
-/* A full border plus a tint, never a one-sided stripe on a rounded box. */
+/* A full border plus a tint, never a one-sided stripe on a rounded box.
+
+   Drawn in the page's own ink and none of the four hues. A block that holds
+   nothing of its own is a fact about how the unit is addressed, not a reading:
+   nothing here was asked and refused. Wearing the refused hue it was the
+   loudest mark on a page whose whole subject is four colours meaning four
+   things, and it was saying a fifth. */
 .window {
   margin: 0 0 var(--space-5);
   padding: var(--space-2) var(--space-4);
-  border: 1px solid color-mix(in srgb, var(--sg-refused) 28%, transparent);
-  background: color-mix(in srgb, var(--sg-refused) 8%, transparent);
+  border: 1px solid var(--sg-rule);
+  background: color-mix(in srgb, var(--sg-readout) 4%, transparent);
   border-radius: var(--radius-sm);
-  max-width: var(--sg-measure-wide);
+  max-width: var(--sg-measure);
 }
 
 /* The reading surface gives a `summary` a margin of its own, which inside a box
@@ -413,7 +419,7 @@ const blockNoun = computed(() => t('map.block', { block: '' }).trim());
   font-family: var(--font-reading);
   font-size: 0.85rem;
   font-weight: 500;
-  color: var(--sg-refused);
+  color: var(--color-text-primary);
   cursor: pointer;
   list-style: none;
 }
@@ -631,15 +637,17 @@ const blockNoun = computed(() => t('map.block', { block: '' }).trim());
   opacity: 0.5;
 }
 
+/* The same fact as the disclosure above, so the same marks: the page's ink, and
+   none of the four hues. */
 .bank__window {
   margin: 0 0 0 auto;
   padding: 0.15rem 0.5rem;
-  border: 1px solid color-mix(in srgb, var(--sg-refused) 28%, transparent);
-  background: color-mix(in srgb, var(--sg-refused) 8%, transparent);
+  border: 1px solid var(--sg-rule);
+  background: color-mix(in srgb, var(--sg-readout) 4%, transparent);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
   font-size: 0.68rem;
-  color: var(--sg-refused);
+  color: var(--color-text-secondary);
 }
 
 /* Nineteen banks of up to eighty-five blocks: the table scrolls rather than
