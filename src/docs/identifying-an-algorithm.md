@@ -134,6 +134,20 @@ rejected outright.
 **Under investigation** is everything else, with the reason it is still open printed
 beside it.
 
+**Identified is a statement about one comparison, not a grade of accuracy.** It says a
+model was rendered, read back through the pipeline the unit's takes were read through,
+and matched them within the gates listed beside it — and that rival candidates were run
+and lost. It does not say the claim is finished: the archive prints what a claim does not
+settle, and most identified ones carry that list. It does not say the residual is
+inaudible, because no gate here is a perceptual one; worst-case residuals of several
+decibels sit beside median ones of a tenth, and where a residual is small the reason is
+often that the rig resolves three orders finer than the thing being identified. And it
+does not say the bytes agree exactly — though on this kind of unit that is reachable
+rather than fanciful, because what is behind these bytes is arithmetic on a fixed-point
+clock rather than a continuous circuit. One claim here returns the reading's own value at
+five hundred and fifty-two of six hundred and sixty settings. There is no level above
+identified today, and nothing on this site should be read as claiming one.
+
 **An implementation is published for an identified claim and for no other.** Printing a
 rejected model as C++ would publish an algorithm the archive refused, in the form a
 reader is most likely to take away and compile.

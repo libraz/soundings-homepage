@@ -57,13 +57,16 @@ const tally = computed(() => {
 });
 
 /**
- * One cell per insertion effect type, at the highest level any claim reaches it
- * at.
+ * One cell per insertion effect type, at what the claims reaching it add up to.
  *
- * Highest rather than first: a type can carry a claim that closed and another
- * that has not, and 01 20 does. A cell showing whichever claim happened to sort
- * first would say a type was still open on a page that lists its identified
- * claim two rows down.
+ * Four marks and not two, because two of them cannot tell apart a type nothing
+ * is open on from a type one byte closed on. A claim is about a handful of
+ * addresses, and one claim can reach twenty-one types: the rate table alone
+ * fills twenty-one of these cells, and it is one byte. A cell filled on that
+ * basis would say the type was identified when what closed is a single
+ * parameter of it, so the half mark carries "some claim here closed" and the
+ * full one is kept for a type with nothing still open. Nothing on this unit
+ * reaches the full mark yet, and that is the honest reading rather than a gap.
  */
 /** Every claim that reaches a type, the ones that closed first. */
 const claimsByType = computed(() => {
@@ -87,7 +90,14 @@ const strip = computed(() => {
   return all.map((effect) => {
     const claims = claimsByType.value.get(effect.type) ?? [];
     const identified = claims.filter((line) => line.level === 'identified').length;
-    const state = claims.length === 0 ? 'absent' : identified > 0 ? 'identified' : 'claimed';
+    const state =
+      claims.length === 0
+        ? 'absent'
+        : identified === 0
+          ? 'claimed'
+          : identified === claims.length
+            ? 'identified'
+            : 'partial';
     return {
       type: effect.type,
       name: effect.printed?.name ?? null,
@@ -111,7 +121,11 @@ const reach = computed(() => {
   return {
     total: cells.length,
     claimed: cells.filter((cell) => cell.state !== 'absent').length,
-    identified: cells.filter((cell) => cell.state === 'identified').length,
+    // Counted apart on purpose. Summed, the two read as one number of types
+    // that got somewhere, and the only figure that would answer "how much of
+    // this unit is worked out" is the one nothing has reached.
+    partial: cells.filter((cell) => cell.state === 'partial').length,
+    settled: cells.filter((cell) => cell.state === 'identified').length,
   };
 });
 
@@ -205,7 +219,8 @@ function saysIsQuoted(line: AlgorithmLine): boolean {
 
         <p class="panel__figure">
           <span class="sg-readout">{{ t('algorithms.reached', reach) }}</span>
-          <span class="panel__aside">{{ t('algorithms.identifiedOn', { count: reach.identified }) }}</span>
+          <span class="panel__aside">{{ t('algorithms.closedOn', { count: reach.partial + reach.settled }) }}</span>
+          <span class="panel__aside">{{ t('algorithms.settledOn', { count: reach.settled }) }}</span>
         </p>
 
         <ul class="strip">
@@ -222,8 +237,9 @@ function saysIsQuoted(line: AlgorithmLine): boolean {
         </ul>
 
         <ul class="sg-key strip__key">
-          <li><span class="sg-cell sg-cell--identified" /> {{ t('algorithms.level.identified') }}</li>
-          <li><span class="sg-cell sg-cell--claimed" /> {{ t('algorithms.level.investigating') }}</li>
+          <li><span class="sg-cell sg-cell--identified" /> {{ t('algorithms.cell.settled') }}</li>
+          <li><span class="sg-cell sg-cell--partial" /> {{ t('algorithms.cell.partial') }}</li>
+          <li><span class="sg-cell sg-cell--claimed" /> {{ t('algorithms.cell.open') }}</li>
           <li><span class="sg-cell sg-cell--absent" /> {{ t('algorithms.noClaim') }}</li>
         </ul>
       </section>

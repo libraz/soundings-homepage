@@ -542,12 +542,30 @@ a.sg-cell:focus-visible,
   color: var(--color-text-muted);
 }
 
-/* The same two marks as cells, for the strip that shows where identification
-   has reached across a unit's effect types. */
+/* The marks for the strip that shows where identification has reached across a
+   unit's effect types. Ink at three strengths, never a hue: how far a reading
+   got is not one of the four things a measurement can be. */
+
+/* Nothing about this type is still open. */
 .sg-cell.sg-cell--identified {
   background: color-mix(in srgb, var(--sg-readout) 70%, transparent);
 }
 
+/* Some claim reaching this type closed and some has not. Half the square,
+   because half is what it is: one claim can reach twenty-one types while being
+   about a single byte, and a full mark earned that way would say the type was
+   worked out. Split rather than shaded, so it cannot be read as a fourth
+   strength of the depth ramp. */
+.sg-cell.sg-cell--partial {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--sg-readout) 70%, transparent) 50%,
+    color-mix(in srgb, var(--sg-readout) 7%, transparent) 50%
+  );
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sg-readout) 42%, transparent);
+}
+
+/* A claim reaches this type and none of them has closed. */
 .sg-cell.sg-cell--claimed {
   background: color-mix(in srgb, var(--sg-readout) 7%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sg-readout) 42%, transparent);

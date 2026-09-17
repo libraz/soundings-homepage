@@ -377,9 +377,8 @@
     "printedAs": "Named after",
     "addresses": "Addresses",
     "coverage": "Where identification has reached",
-    "coverageLede": "One cell per insertion effect type the unit answers with. A filled cell is a type some claim about it has been identified on. A ringed one is a type a claim reaches and has not closed on. An empty one is a type nothing has been claimed about. The cells are ink rather than colour: the four hues on this site stand for the four things a measurement can be, and how far a reading of one got is not one of them.",
+    "coverageLede": "One cell per insertion effect type the unit answers with. A claim is about a handful of addresses and one claim can reach many types, so a cell says what the claims reaching that type add up to and never that the type itself is worked out. Filled: nothing about it is still open. Half: some claim reaching it closed and some has not. Ringed: a claim reaches it and none has closed. Empty: nothing has been claimed about it. The cells are ink rather than colour, because the four hues on this site stand for the four things a measurement can be, and how far a reading of one got is not one of them.",
     "reached": "{claimed} of {total} types carry a claim",
-    "identifiedOn": "identified on {count}",
     "noClaim": "nothing claimed",
     "claims": "The claims",
     "claimsLede": "Filter by how far each got, or search what it is about.",
@@ -466,6 +465,13 @@
     "seeAlgorithm": "What is behind it",
     "seeAlgorithmCount": "{count} claim(s) about what is behind this",
     "search": "Search",
-    "methodLink": "How an algorithm is identified"
+    "methodLink": "How an algorithm is identified",
+    "closedOn": "some claim has closed on {count}",
+    "settledOn": "nothing left open on {count}",
+    "cell": {
+      "settled": "nothing left open",
+      "partial": "some claim has closed",
+      "open": "claimed, none closed"
+    }
   }
 }
