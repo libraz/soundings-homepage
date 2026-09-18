@@ -65,6 +65,7 @@
         "efx-bands",
         "efx-map",
         "efx-motion",
+        "efx-orders",
         "efx-params",
         "efx-partials",
         "efx-rate",
@@ -640,8 +641,12 @@
           "title": "Stereo-EQ"
         },
         {
+          "id": "0110-a-drive-byte-is-a-gain-in-front-of-a-fixed-curve",
+          "title": "Overdrive · Distortion"
+        },
+        {
           "id": "0120-eight-allpass-sections-summed-with-the-dry",
-          "title": "Phaser — + Manual / Mix"
+          "title": "Phaser — Manual / Mix"
         },
         {
           "id": "0120-the-resonance-byte-closes-a-loop",
@@ -676,8 +681,12 @@
           "title": "Lo-Fi 2 — Cutoff / W/P LPF / Disc LPF"
         },
         {
+          "id": "1107-a-renumbered-rotary-is-one-rotor-above-the-transient",
+          "title": "Rotary · PH / Rotary"
+        },
+        {
           "id": "1108-a-multi-reaches-the-single-types-block",
-          "title": "Auto Wah · FL → Delay · PH / Rotary +1"
+          "title": "Auto Wah · FL → Delay · OD / AutoWah +2"
         },
         {
           "id": "amp-four-fixed-curves-after-the-drive-stage",
@@ -697,15 +706,23 @@
         },
         {
           "id": "freq-the-byte-indexes-a-third-octave-table",
-          "title": "Stereo-EQ · Stereo Chorus · Stereo Delay"
+          "title": "Stereo-EQ · Stereo Chorus · Stereo Delay +2"
         },
         {
           "id": "gain-the-byte-is-a-decibel-a-step",
-          "title": "Stereo-EQ · Stereo Chorus · Stereo Delay"
+          "title": "Stereo-EQ · Stereo Chorus · Stereo Delay +2"
         },
         {
           "id": "level-the-multiplier-is-a-seventh-bit-table",
           "title": "Stereo-EQ · Distortion · Hexa Chorus"
+        },
+        {
+          "id": "lo-fi-two-filter-bytes-that-share-a-printed-name",
+          "title": "Lo-Fi 1 — Pre Filter / Post Filter"
+        },
+        {
+          "id": "out-the-byte-picks-two-renderings-of-one-placement",
+          "title": "3D Auto · 3D Manual"
         },
         {
           "id": "pan-one-multiplier-a-side-under-a-term-added-after-it",
@@ -714,6 +731,14 @@
         {
           "id": "rate-the-byte-indexes-a-printed-table",
           "title": "Phaser · Auto Wah · Stereo Flanger +18"
+        },
+        {
+          "id": "section-gain-a-shelf-stores-the-cut",
+          "title": "Stereo-EQ — Low Gain"
+        },
+        {
+          "id": "section-gain-a-stored-section-blended-with-the-dry",
+          "title": "Stereo-EQ — M1 Gain / M2 Gain"
         },
         {
           "id": "time-the-byte-indexes-a-ladder-cut-to-whole-samples",
@@ -726,9 +751,13 @@
         {
           "id": "wave-the-byte-picks-one-of-five-fixed-shapes",
           "title": "Tremolo · Auto Pan · Rhodes Multi"
+        },
+        {
+          "id": "width-the-byte-halves-the-printed-table",
+          "title": "Stereo-EQ · GTR Multi 2 · Clean Gt Multi 1"
         }
       ],
-      "archiveBytes": 70912073,
+      "archiveBytes": 74760093,
       "catalogues": {
         "tones": true,
         "effects": true,
