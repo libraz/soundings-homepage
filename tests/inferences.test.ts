@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error -- the sync scripts are plain JS with JSDoc types
-import { levelOf, titleOf } from '../scripts/lib/inferences.mjs';
+import { levelOf, STANDINGS, standingOf, titleOf } from '../scripts/lib/inferences.mjs';
 // @ts-expect-error -- the sync scripts are plain JS with JSDoc types
 import { asExample } from '../scripts/lib/model-cpp.mjs';
 
@@ -65,6 +65,118 @@ describe('the level a claim is at', () => {
 
   it('fails on a state the site has no word for rather than defaulting', () => {
     expect(() => levelOf({ state: 'provisional', about: {} }, null)).toThrow(/provisional/);
+  });
+});
+
+/**
+ * The one word a reader is told first.
+ *
+ * `level` and `verdict` fail apart, and a page that showed only one of them
+ * said the wrong thing about several claims at once — most damagingly that a
+ * retracted claim was one nobody had built a model for yet. These six words
+ * are that pair read down in a fixed order, and the order is the whole of it.
+ */
+describe('where a claim stands, in one word', () => {
+  const compared = { model: 'inferences/models/x.json' };
+
+  it('is withdrawn for a claim the archive no longer stands behind', () => {
+    expect(standingOf({ level: 'retracted', reproduces: null, verdict: null })).toBe('withdrawn');
+    expect(standingOf({ level: 'superseded', reproduces: null, verdict: null })).toBe('withdrawn');
+  });
+
+  /**
+   * The defect the order exists for. A retracted claim usually has no
+   * `reproduces`, so any order testing that first calls it `unmodelled` and
+   * tells the reader nothing has been compared yet — about a claim that was
+   * compared, and then withdrawn.
+   */
+  it('is withdrawn even where a model closed, and even where none was built', () => {
+    expect(standingOf({ level: 'retracted', reproduces: compared, verdict: 'reproduces' })).toBe(
+      'withdrawn',
+    );
+    expect(standingOf({ level: 'superseded', reproduces: compared, verdict: 'rejected' })).toBe(
+      'withdrawn',
+    );
+  });
+
+  it('is closed exactly where the level is identified', () => {
+    expect(standingOf({ level: 'identified', reproduces: compared, verdict: 'reproduces' })).toBe(
+      'closed',
+    );
+    expect(
+      standingOf({
+        level: 'identified',
+        reproduces: compared,
+        verdict: 'equivalent_under_this_test',
+      }),
+    ).toBe('closed');
+  });
+
+  /**
+   * A limit on how long the claim was pursued, not a verdict on the model. One
+   * of this archive's parked claims carries a model that reproduced what the
+   * unit did, and its curves are drawn solid on that verdict while the page
+   * says the claim was exhausted.
+   */
+  it('is exhausted for a parked claim, whatever its model came to', () => {
+    expect(standingOf({ level: 'parked', reproduces: null, verdict: null })).toBe('exhausted');
+    expect(standingOf({ level: 'parked', reproduces: compared, verdict: 'reproduces' })).toBe(
+      'exhausted',
+    );
+  });
+
+  it('is not closed for each of the four verdicts a comparison can fail under', () => {
+    for (const verdict of ['breaks_down', 'rejected', 'domain_too_narrow', 'candidates_too_few']) {
+      expect(standingOf({ level: 'investigating', reproduces: compared, verdict })).toBe('failed');
+    }
+  });
+
+  it('is undecided where a comparison was made and carries no verdict', () => {
+    expect(standingOf({ level: 'investigating', reproduces: compared, verdict: null })).toBe(
+      'undecided',
+    );
+  });
+
+  /**
+   * `standing_untested` with a closed verdict. `levelOf()` refuses to call it
+   * identified, and the pair would otherwise reach the end of the order and
+   * throw — the model closed, so `unmodelled` is false too.
+   */
+  it('is undecided where the model closed but the archive left the claim untested', () => {
+    const untested = { ...standing, state: 'standing_untested' };
+    const level = levelOf(untested, { verdict: 'reproduces' }).level;
+    expect(level).toBe('investigating');
+    expect(standingOf({ level, reproduces: compared, verdict: 'reproduces' })).toBe('undecided');
+  });
+
+  it('is not yet modelled where nothing has been compared', () => {
+    expect(standingOf({ level: 'investigating', reproduces: null, verdict: null })).toBe(
+      'unmodelled',
+    );
+  });
+
+  it('fails on a pair it has no word for rather than defaulting', () => {
+    expect(() =>
+      standingOf({ level: 'investigating', reproduces: compared, verdict: 'pending_review' }),
+    ).toThrow(/pending_review/);
+  });
+
+  it('only ever answers with one of the six words the locales carry', () => {
+    expect(STANDINGS).toHaveLength(6);
+    for (const level of ['retracted', 'superseded', 'identified', 'parked', 'investigating']) {
+      for (const reproduces of [null, compared]) {
+        for (const verdict of [null, 'reproduces', 'rejected', 'equivalent_under_this_test']) {
+          let answer: string | null = null;
+          try {
+            answer = standingOf({ level, reproduces, verdict });
+          } catch {
+            // A pair with no word is a failure by design, not a default.
+            continue;
+          }
+          expect(STANDINGS).toContain(answer);
+        }
+      }
+    }
   });
 });
 
