@@ -16,10 +16,34 @@ import { fileURLToPath } from 'node:url';
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dataDir = join(siteRoot, 'src', 'data');
 const publicDataDir = join(siteRoot, 'src', 'public', 'data');
+// Same override yarn sync honours. When no archive checkout sits beside this
+// repository — the normal case for a build that has only this repository —
+// the column cross-check below is skipped rather than failing the run.
+const archiveDocumentsDir = join(
+  process.env.SOUNDINGS_ROOT ?? resolve(siteRoot, '..', 'soundings'),
+  'documents',
+);
 
 /** @param {string} path */
 function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
+}
+
+/**
+ * The set of column numbers a document's own value-conversion table defines,
+ * read straight from the archive rather than duplicated by hand. Returns
+ * `null` when the archive is not checked out, which callers treat as "not
+ * checked" rather than "no columns".
+ * @param {string} documentId
+ * @returns {Set<number> | null}
+ */
+const columnCache = new Map();
+function documentColumns(documentId) {
+  if (columnCache.has(documentId)) return columnCache.get(documentId);
+  const path = join(archiveDocumentsDir, documentId, 'value-conversion.json');
+  const columns = existsSync(path) ? new Set(readJson(path).rows.map((row) => row.column)) : null;
+  columnCache.set(documentId, columns);
+  return columns;
 }
 
 const legend = readJson(join(dataDir, 'legend.json'));
@@ -30,6 +54,10 @@ const units = readJson(join(dataDir, 'units.json')).units;
 const problems = [];
 let blocksChecked = 0;
 let addressesChecked = 0;
+let printedParametersWithColumn = 0;
+let printedParametersWithoutColumn = 0;
+let printedParametersWithNoUnit = 0;
+let printedParametersColumnChecked = 0;
 /** Manufacturer byte -> the units whose frames carry it. */
 const makers = new Map();
 
@@ -139,6 +167,36 @@ for (const unit of units) {
       );
     }
   }
+
+  // A parameter row that cites a conversion column must cite a real one —
+  // that is a typo the sync step can make. Whether the column prints a unit
+  // is the document's own business, not a defect: column 14 of the SC-8850
+  // manual's own table is Accl, an unlabelled 0–15 scale, and 134 of its rows
+  // correctly carry no unit. Checked only when an archive checkout sits
+  // beside this repository; skipped otherwise, same as `yarn sync --check`.
+  const effectsPath = join(unitDir, 'effects.json');
+  if (existsSync(effectsPath)) {
+    const effects = readJson(effectsPath);
+    for (const effect of effects.effects ?? []) {
+      for (const parameter of effect.parameters ?? []) {
+        const printed = parameter.printed;
+        if (!printed) continue;
+        if (printed.column === null || printed.column === undefined) {
+          printedParametersWithoutColumn += 1;
+          continue;
+        }
+        printedParametersWithColumn += 1;
+        if (!printed.unit) printedParametersWithNoUnit += 1;
+        const columns = documentColumns(printed.document);
+        if (columns) printedParametersColumnChecked += 1;
+        if (columns && !columns.has(printed.column)) {
+          problems.push(
+            `${unit.id} ${parameter.address} ${printed.name}: printed column ${printed.column} is not a column ${printed.document}'s value-conversion table defines`,
+          );
+        }
+      }
+    }
+  }
   // Every address of a unit is as wide as the archive wrote it, and the
   // emulator counts that width rather than assuming one. Regions that disagree
   // would make it refuse the whole unit, so the disagreement is caught here
@@ -189,6 +247,19 @@ if (problems.length > 0) {
 console.info(
   `data: ${units.length} unit(s), ${blocksChecked} blocks, ` +
     `${addressesChecked.toLocaleString()} addresses, every code in the legend`,
+);
+// Say how many rows the column cross-check actually reached. Without an
+// archive beside this repository — which is every deploy build — it reaches
+// none, and a line claiming the columns exist would be stating something this
+// run never looked at.
+console.info(
+  `printed parameters: ${printedParametersWithColumn} cite a conversion column ` +
+    `(${printedParametersWithNoUnit} of those print no unit), ` +
+    `${printedParametersWithoutColumn} cite none, ` +
+    (printedParametersColumnChecked === printedParametersWithColumn
+      ? 'every cited column exists'
+      : `${printedParametersColumnChecked} of them checked against the archive's own table` +
+        ' (the rest were not checked: no archive beside this repository)'),
 );
 
 // Not a verdict on whether the emulator can read them — `protocol.ts` decides
