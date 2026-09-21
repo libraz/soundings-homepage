@@ -565,7 +565,18 @@ export interface AlgorithmShard {
   adds: string | null;
   refutedBy: string | null;
   couldHaveBeenRefutedBy: string | null;
-  whatItWouldChange: string[];
+  /**
+   * Two statements the archive keeps under one key, and three shapes it writes
+   * them in: a path to another record is a claim a retraction would reach, and
+   * a sentence — bare, or as a `what`/`how` pair — is what knowing this is
+   * worth to anyone rendering the effect. The whole field is sometimes one of
+   * these rather than a list of them, and one claim's list holds both kinds, so
+   * the page reads each entry rather than the shape around it.
+   */
+  whatItWouldChange:
+    | string
+    | (string | { what?: string | null; how?: string | null })[]
+    | { what?: string | null; how?: string | null };
   grounds: {
     measurements: { file: string; within: string | null; keys: string[]; values: unknown[] }[];
     documentRows: { file: string; rows: string[] }[];

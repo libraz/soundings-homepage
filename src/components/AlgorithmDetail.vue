@@ -150,6 +150,50 @@ const residualWhy = computed(() => {
   return held && typeof held.why === 'string' ? held.why : null;
 });
 
+/**
+ * What the archive says this claim would change, as a list either way.
+ *
+ * It answers with a list or with a single sentence, so a bare `v-for` over the
+ * field spells the sentence out one character to an entry.
+ */
+const wouldChange = computed(() => {
+  const held = data.value?.whatItWouldChange;
+  const items = Array.isArray(held) ? held : [held];
+  return items.filter(
+    (item): item is string | { what?: unknown; how?: unknown } =>
+      (typeof item === 'string' && item.length > 0) || (!!item && typeof item === 'object'),
+  );
+});
+
+/**
+ * The claims a retraction would reach: the entries that are paths to other
+ * records. One claim's list holds these beside sentences, so the entry decides
+ * and never the shape around it.
+ */
+const reaches = computed(() =>
+  wouldChange.value.filter(
+    (item): item is string => typeof item === 'string' && item.startsWith('inferences/'),
+  ),
+);
+
+/**
+ * What knowing this is worth to anyone rendering the effect.
+ *
+ * Stated as a bare sentence on most claims and as a `what`/`how` pair on one,
+ * so both are carried here as the pair and a sentence on its own is drawn
+ * without a subject line rather than given one this site made up.
+ */
+const reachProse = computed(() =>
+  wouldChange.value.flatMap((item) => {
+    if (typeof item === 'string') {
+      return item.startsWith('inferences/') ? [] : [{ what: null, how: item }];
+    }
+    const what = typeof item.what === 'string' && item.what.length > 0 ? item.what : null;
+    const how = typeof item.how === 'string' && item.how.length > 0 ? item.how : null;
+    return what || how ? [{ what, how }] : [];
+  }),
+);
+
 const domain = computed(() => {
   const held = data.value?.reproduces?.domain as Record<string, unknown> | null | undefined;
   if (!held) return null;
@@ -754,10 +798,16 @@ watch(
         </dl>
       </details>
 
-      <p v-if="data.whatItWouldChange.length" class="reach" data-section="reach">
+      <!--
+        One key, two statements. A list of archive paths is what a retraction
+        would reach and is drawn as those records; a sentence is the archive
+        arguing about what the claim is worth to a renderer, so it is folded
+        with the rest of its own prose rather than left open in English.
+      -->
+      <p v-if="reaches.length" class="reach" data-section="reach">
         <span class="sg-label">{{ t('algorithms.whatItWouldChange') }}</span>
         <a
-          v-for="other in data.whatItWouldChange"
+          v-for="other in reaches"
           :key="other"
           class="reach__item sg-readout"
           :href="archiveHref(other)"
@@ -765,6 +815,27 @@ watch(
           rel="noreferrer"
         >{{ other }}</a>
       </p>
+
+      <details v-if="reachProse.length" class="fold sg-panel" data-section="renders">
+        <summary class="fold__summary">
+          <span class="sg-label">{{ t('algorithms.whatItChangesToRender') }}</span>
+          <span class="sg-readout fold__count">{{ reachProse.length }}</span>
+        </summary>
+        <template v-for="(said, index) in reachProse" :key="index">
+          <ArchiveProse
+            v-if="said.what"
+            class="prose prose--small"
+            :class="{ 'sg-quoted': quoting }"
+            :runs="verbatimProse(said.what)"
+          />
+          <ArchiveProse
+            v-if="said.how"
+            class="prose"
+            :class="{ 'sg-quoted': quoting }"
+            :runs="verbatimProse(said.how)"
+          />
+        </template>
+      </details>
     </template>
   </div>
 </template>

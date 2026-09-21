@@ -516,6 +516,7 @@
     "setting": "設定値",
     "fromRecord": "読み取り元",
     "whatItWouldChange": "撤回したときに波及する範囲",
+    "whatItChangesToRender": "これが分かっていると、実装する側の何が変わるか",
     "notes": "記録が述べているそのほかのこと",
     "archiveWords": "アーカイブ自身の言葉",
     "archiveWordsBody": "書かれたまま示しています。上の短い断定文は翻訳していますが、こちらはアーカイブが自分の声で書き、進むにつれて改訂していく段落です。",

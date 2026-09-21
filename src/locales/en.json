@@ -516,6 +516,7 @@
     "setting": "setting",
     "fromRecord": "Read from",
     "whatItWouldChange": "What retracting it would reach",
+    "whatItChangesToRender": "What knowing this changes for anyone rendering it",
     "notes": "What else the record says",
     "archiveWords": "The archive's own words",
     "archiveWordsBody": "Shown as they were written. The short statements above are translated; these paragraphs are the archive writing in its own voice and are revised as it goes.",

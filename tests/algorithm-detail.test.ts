@@ -128,6 +128,25 @@ function openEverything(wrapper: VueWrapper): void {
  * the four short statements and quotes everything under them, and all of it is
  * what the reader asked to stop meeting at full length on arrival.
  */
+/**
+ * The entries of `whatItWouldChange` that are prose rather than a path to
+ * another record, each as the `what`/`how` pair the archive states one of them
+ * as. The field is a list, or one entry on its own, and an entry is a sentence
+ * or that pair — three shapes for two statements, which is why nothing here
+ * reads the shape of the field to decide what an entry is.
+ */
+function renderedBy(held: AlgorithmShard): { what: string | null; how: string | null }[] {
+  const field = held.whatItWouldChange;
+  const entries = Array.isArray(field) ? field : [field];
+  return entries.flatMap((entry) => {
+    if (typeof entry === 'string') {
+      return entry.startsWith('inferences/') ? [] : [{ what: null, how: entry }];
+    }
+    if (!entry || typeof entry !== 'object') return [];
+    return [{ what: entry.what ?? null, how: entry.how ?? null }];
+  });
+}
+
 function archiveProse(held: AlgorithmShard): string[] {
   const said: (string | null | undefined)[] = [
     held.claim,
@@ -153,6 +172,10 @@ function archiveProse(held: AlgorithmShard): string[] {
     said.push(alternative.reading, alternative.ruledOutBy);
   }
   for (const note of held.extra) said.push(note.text);
+  // Two statements under one key in three shapes, and every entry that is not
+  // a path to another record is prose. This went unread here while a sentence
+  // was being drawn a character to a link and a pair as `[object Object]`.
+  for (const entry of renderedBy(held)) said.push(entry.what, entry.how);
 
   return said
     .filter((sentence): sentence is string => typeof sentence === 'string' && sentence.length > 0)
@@ -209,6 +232,8 @@ function inside(held: AlgorithmShard): Record<string, number> {
   }
   if (held.alternatives.length) counts.alternatives = held.alternatives.length;
   if (held.extra.length) counts.notes = held.extra.length;
+  const rendered = renderedBy(held);
+  if (rendered.length) counts.renders = rendered.length;
   return counts;
 }
 
@@ -236,6 +261,10 @@ const ORDER = [
   'alternatives',
   'notes',
   'reach',
+  // The same key as `reach`, in its other shape: prose about what the claim is
+  // worth to a renderer, folded like the archive's other paragraphs rather
+  // than left open in English at the foot of the page.
+  'renders',
 ];
 
 describe('what a reader meets before opening anything', () => {
@@ -290,10 +319,79 @@ describe('what a reader meets before opening anything', () => {
   });
 });
 
+/**
+ * One archive key, two statements, three shapes.
+ *
+ * `what_it_would_change` answers with a path to another record — a claim a
+ * retraction would reach — or with prose about what knowing this is worth to
+ * anyone rendering the effect. The prose is written as a bare sentence on most
+ * claims and as a `what`/`how` pair on one, and the whole field is sometimes a
+ * single entry rather than a list of them. Reading the shape instead of the
+ * entry spelled a sentence out one character to a link and drew the pair as
+ * `[object Object]`, both of them as links into the archive that resolve to
+ * nothing.
+ */
+describe('what the archive says this claim would change', () => {
+  /**
+   * The hrefs of the reach list itself. The page links into the archive from
+   * several places — a model file, a record — so this asks the list rather
+   * than the page.
+   */
+  function reachLinks(wrapper: VueWrapper): string[] {
+    return wrapper.findAll('.reach__item').map((link) => link.attributes('href') ?? '');
+  }
+
+  it('links the records a retraction reaches, and only those', () => {
+    const shown = shard('phaser-reso');
+    const paths = (shown.whatItWouldChange as string[]).filter((entry) =>
+      entry.startsWith('inferences/'),
+    );
+    expect(paths.length).toBeGreaterThan(0);
+
+    const wrapper = page(shown);
+    const links = reachLinks(wrapper);
+    for (const path of paths) expect(links.some((href) => href.endsWith(path))).toBe(true);
+    for (const href of links) expect(href).toContain('/inferences/');
+    wrapper.unmount();
+  });
+
+  it('draws a bare sentence as a sentence, not as one link per character', () => {
+    const shown = shard('gain');
+    expect(typeof shown.whatItWouldChange).toBe('string');
+
+    const wrapper = page(shown);
+    expect(reachLinks(wrapper)).toEqual([]);
+    openEverything(wrapper);
+    expect(visibleText(wrapper)).toContain(plainProse(dashed(shown.whatItWouldChange as string)));
+    wrapper.unmount();
+  });
+
+  it('draws a what/how pair as both of its sentences, not as [object Object]', () => {
+    const shown = shard('level');
+    const [pair] = shown.whatItWouldChange as { what: string; how: string }[];
+    expect(typeof pair.what).toBe('string');
+    expect(typeof pair.how).toBe('string');
+
+    const wrapper = page(shown);
+    openEverything(wrapper);
+    const text = visibleText(wrapper);
+    expect(text).not.toContain('[object Object]');
+    expect(text).toContain(plainProse(dashed(pair.what)));
+    expect(text).toContain(plainProse(dashed(pair.how)));
+    expect(reachLinks(wrapper)).toEqual([]);
+    wrapper.unmount();
+  });
+});
+
 describe('the order the page is read in', () => {
+  /**
+   * `reach` and `renders` are one archive key in its two shapes, so no claim
+   * can carry both and no claim fills the list outright. This one fills every
+   * other block.
+   */
   it('puts the numbers above the implementation, and the argument below it', () => {
     const wrapper = page(shard(WHOLE));
-    expect(order(wrapper)).toEqual(ORDER);
+    expect(order(wrapper)).toEqual(ORDER.filter((name) => name !== 'reach'));
     wrapper.unmount();
   });
 
@@ -406,6 +504,7 @@ describe('both languages', () => {
       en.algorithms.grounds,
       en.algorithms.alternatives,
       en.algorithms.notes,
+      en.algorithms.whatItChangesToRender,
     ]);
     expect(japaneseFolds).toEqual([
       ja.algorithms.claim,
@@ -413,6 +512,7 @@ describe('both languages', () => {
       ja.algorithms.grounds,
       ja.algorithms.alternatives,
       ja.algorithms.notes,
+      ja.algorithms.whatItChangesToRender,
     ]);
     expect(japaneseFolds).not.toEqual(englishFolds);
   });

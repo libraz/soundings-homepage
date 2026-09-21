@@ -59,6 +59,9 @@ const claimIds = new Set();
 let claims = 0;
 let examples = 0;
 let charts = 0;
+/** Entries of `whatItWouldChange`, split the way the page splits them. */
+let reachPaths = 0;
+let reachProse = 0;
 
 const units = existsSync(publicDataDir)
   ? readdirSync(publicDataDir, { withFileTypes: true })
@@ -124,6 +127,29 @@ for (const unitId of units) {
     // still open, reads on the page as a state somebody decided.
     if (typeof shard.why !== 'string' || shard.why.trim() === '') {
       problems.push(`${unitId}/${id}: is ${shard.level} and says nothing about why`);
+    }
+
+    // The archive answers "what would this change" either with a list or with
+    // a single sentence, and each entry is either a path to another record or
+    // prose. The page draws those as two different things, so it decides per
+    // entry; a sentence handed to a bare `v-for` is drawn one character to a
+    // link, which is how it read before anything checked the shape.
+    const reach = shard.whatItWouldChange;
+    const reachEntries = Array.isArray(reach) ? reach : [reach];
+    for (const entry of reachEntries) {
+      if (entry === undefined) continue;
+      if (typeof entry === 'string') {
+        if (entry.startsWith('inferences/')) reachPaths += 1;
+        else reachProse += 1;
+        continue;
+      }
+      if (entry && typeof entry === 'object' && ('what' in entry || 'how' in entry)) {
+        reachProse += 1;
+        continue;
+      }
+      problems.push(
+        `${unitId}/${id}: whatItWouldChange holds ${JSON.stringify(entry)}, which is neither an archive path, a sentence, nor a what/how pair`,
+      );
     }
 
     const coded = shard.examples.filter((example) => typeof example.code === 'string');
@@ -417,6 +443,10 @@ if (problems.length > 0) {
 console.info(
   `algorithms: ${claims} claim(s), ${examples} generated example(s), ${charts} curve(s), ` +
     `${levels.size} level(s) and ${verdicts.size} verdict(s) worded in ${locales.join(', ')}`,
+);
+console.info(
+  `what it would change: ${reachPaths} record(s) a retraction reaches, ` +
+    `${reachProse} sentence(s) about rendering it`,
 );
 // Say how many claims the model-readability sweep actually opened. Without an
 // archive beside this repository — every deploy build — it opens none, and a
