@@ -646,6 +646,10 @@
           "title": "Stereo-EQ"
         },
         {
+          "id": "0101-eight-fixed-sections-driven-by-one-width-byte",
+          "title": "Spectrum — Band 1 / Band 2 / Band 3 +7"
+        },
+        {
           "id": "0110-a-drive-byte-is-a-gain-in-front-of-a-fixed-curve",
           "title": "Overdrive · Distortion"
         },
@@ -786,7 +790,7 @@
           "title": "Stereo-EQ · GTR Multi 2 · Clean Gt Multi 1"
         }
       ],
-      "archiveBytes": 77610048,
+      "archiveBytes": 78545170,
       "catalogues": {
         "tones": true,
         "effects": true,
