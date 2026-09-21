@@ -25,8 +25,41 @@ import { curve, unreadable } from './model-maps.mjs';
 /** The verdicts under which a model has closed. */
 const CLOSED = new Set(['reproduces', 'equivalent_under_this_test']);
 
+/** The verdicts under which a model was built, compared, and did not hold. */
+const FAILED = new Set(['breaks_down', 'rejected', 'domain_too_narrow', 'candidates_too_few']);
+
 /** Levels the site can draw. Anything else is a failure rather than a default. */
 export const LEVELS = ['identified', 'investigating', 'parked', 'retracted', 'superseded'];
+
+/** The six words the site tells a reader a claim's standing in. */
+export const STANDINGS = ['withdrawn', 'closed', 'exhausted', 'failed', 'undecided', 'unmodelled'];
+
+/**
+ * How to describe a claim in six words, so a reader never has to work `level`
+ * and `verdict` back into a state themselves.
+ *
+ * A total function, read in the order below, that throws on anything left over
+ * the way `levelOf()` already does. `withdrawn` is tested first on purpose: a
+ * `retracted` claim with no `reproduces` would otherwise fall through to
+ * `unmodelled` and tell a reader "no model has been written yet" about a claim
+ * the archive no longer stands behind.
+ * @param {{level: string, reproduces: any, verdict: string | null}} args
+ */
+export function standingOf({ level, reproduces, verdict }) {
+  if (level === 'retracted' || level === 'superseded') return 'withdrawn';
+  if (level === 'identified') return 'closed';
+  if (level === 'parked') return 'exhausted';
+  if (FAILED.has(verdict)) return 'failed';
+  if (reproduces && verdict === null) return 'undecided';
+  // A closed verdict lands here rather than on `closed` only when the archive
+  // marked the claim `standing_untested`: the model closed, but the archive has
+  // not put its weight behind the claim, so it stays undecided.
+  if (reproduces && CLOSED.has(verdict)) return 'undecided';
+  if (!reproduces) return 'unmodelled';
+  throw new Error(
+    `no standing for level ${JSON.stringify(level)} and verdict ${JSON.stringify(verdict)}`,
+  );
+}
 
 /** Reader for the `inferences/` tree beside the archive's `data/`. */
 export class Inferences {
@@ -124,6 +157,11 @@ export class Inferences {
       level: level.level,
       why: level.why,
       verdict: reproduces?.verdict ?? null,
+      standing: standingOf({
+        level: level.level,
+        reproduces,
+        verdict: reproduces?.verdict ?? null,
+      }),
       rounds: meta.rounds ?? null,
       madeAt: meta.made_at ?? null,
       madeBy: meta.made_by ?? null,
@@ -163,7 +201,9 @@ export class Inferences {
       })),
       reproduces: reproduces ? summarise(reproduces) : null,
       models: models.map(({ model, ...rest }) => rest),
-      charts: models.flatMap((entry) => chartsOf(entry, reproduces?.verdict ?? null)),
+      charts: models.flatMap((entry) =>
+        chartsOf(entry, reproduces?.verdict ?? null, { unitId, id, warnings }),
+      ),
       // Code is printed for an identified claim and for no other.
       //
       // A model that broke down, or that the archive rejected outright, is still
@@ -427,17 +467,41 @@ function quantityOf(key) {
  * that the page never has to look it up: a curve from a model the archive
  * rejected is worth seeing beside the readings it failed to follow, and is worth
  * seeing only if it says which of the two it is.
+ *
+ * A map this file cannot read is not skipped quietly. It is pushed to
+ * `warnings` as an object rather than a sentence — the same channel `one()`
+ * already threads through for a named model that is not in the archive, but
+ * shaped for a script to filter on rather than a person to read — so a claim
+ * cannot lose a chart and its code with nothing said.
  * @param {{label: string | null, path: string, model: any}} entry
  * @param {string | null} verdict
+ * @param {{unitId: string, id: string, warnings: any[]}} context
  */
-function chartsOf({ label, path, model }, verdict) {
+function chartsOf({ label, path, model }, verdict, { unitId, id, warnings }) {
   /** @type {any[]} */
   const charts = [];
+
+  /** Records why a map cannot be read, on the shared warnings channel. */
+  const flagUnreadable = (of, section, map) => {
+    const why = unreadable(map);
+    if (why)
+      warnings.push({
+        unit: unitId,
+        id,
+        model: path,
+        label,
+        of,
+        section,
+        kind: map?.kind ?? null,
+        why,
+      });
+    return why;
+  };
 
   for (const [index, stage] of (model.chain ?? []).entries()) {
     for (const [key, value] of Object.entries(stage)) {
       if (!value || typeof value !== 'object' || !value.map) continue;
-      if (unreadable(value.map)) continue;
+      if (flagUnreadable(key, stage.kind, value.map)) continue;
       const { series, marks } = curve(value.map);
       charts.push({
         id: `${path}#${index}.${key}`,
@@ -459,7 +523,7 @@ function chartsOf({ label, path, model }, verdict) {
   }
 
   for (const [range, table] of Object.entries(model.tables ?? {})) {
-    if (unreadable(table)) continue;
+    if (flagUnreadable(range, 'table', table)) continue;
     const { series, marks } = curve(table);
     charts.push({
       id: `${path}#${range}`,
@@ -469,7 +533,10 @@ function chartsOf({ label, path, model }, verdict) {
       verdict,
       step: steps(table),
       byte: model.model?.address ?? null,
-      quantity: quantityOf(typeof table.first_hz === 'number' ? 'first_hz' : 'ratio'),
+      // A table names no unit of its own. Only `first_hz` says one; every other
+      // table is left with no guessed quantity, so the page falls back to what a
+      // document prints and then to "not stated" rather than to this site's guess.
+      quantity: typeof table.first_hz === 'number' ? quantityOf('first_hz') : null,
       log: false,
       from: table.from ?? null,
       why: table.why ?? table.why_it_ends_early ?? null,
@@ -546,7 +613,11 @@ export function indexOf(inferences) {
     counts: { ...counts, total: inferences.length },
     inferences: inferences.map((inference) => ({
       id: inference.id,
+      // Assigned by the caller, not read from `src/data/slugs.json` here — the
+      // route this line points a reader at.
+      slug: inference.slug ?? null,
       level: inference.level,
+      standing: inference.standing,
       why: inference.why,
       state: inference.state,
       verdict: inference.verdict,

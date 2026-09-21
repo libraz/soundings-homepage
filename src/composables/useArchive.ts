@@ -422,6 +422,24 @@ export interface ClaimComparison {
  */
 export type AlgorithmLevel = 'identified' | 'investigating' | 'parked' | 'retracted' | 'superseded';
 
+/**
+ * The six words a reader is told a claim's standing in, read off `level` and
+ * `verdict` together rather than off `level` alone.
+ *
+ * `withdrawn` covers both `retracted` and `superseded`; `closed` and `exhausted`
+ * each cover one `level`. Below that, `failed`, `undecided` and `unmodelled`
+ * split `investigating` by what `verdict` says: a model built and found wanting,
+ * a comparison made and not yet judged, or no model rendered at all. Computed
+ * once, in the archive's own terms, and carried rather than re-derived here.
+ */
+export type AlgorithmStanding =
+  | 'withdrawn'
+  | 'closed'
+  | 'exhausted'
+  | 'failed'
+  | 'undecided'
+  | 'unmodelled';
+
 /** One curve: what the model answers, and what a run actually read. */
 export interface AlgorithmChart {
   id: string;
@@ -471,6 +489,24 @@ export interface AlgorithmTitle {
   document: string;
 }
 
+/**
+ * What a published document prints a catalogue parameter as, and where.
+ *
+ * `data` and `column` are the printed range and the column of that range's
+ * table the parameter reads — together they settle which of several printed
+ * tables applies, the way `AlgorithmTitle` settles which document a claim's
+ * heading came from. `unit` is that column's own printed heading. All three are
+ * null where a manual reaches the effect type but not this parameter's row.
+ */
+export interface PrintedParameter {
+  name: string;
+  page: number;
+  document: string;
+  data: string | null;
+  column: number | null;
+  unit: string | null;
+}
+
 /** The model as code, or the reason there is none. */
 export interface AlgorithmExample {
   label: string | null;
@@ -504,6 +540,7 @@ export interface AlgorithmShard {
   /** why it is at that level, in the archive's own terms */
   why: string;
   verdict: string | null;
+  standing: AlgorithmStanding;
   rounds: number | null;
   madeAt: string | null;
   madeBy: string | null;
@@ -561,7 +598,10 @@ export interface AlgorithmShard {
 /** One line of the unit's algorithm index. */
 export interface AlgorithmLine {
   id: string;
+  /** the route segment, assigned by the caller rather than read here */
+  slug: string | null;
   level: AlgorithmLevel;
+  standing: AlgorithmStanding;
   why: string;
   state: string | null;
   verdict: string | null;
