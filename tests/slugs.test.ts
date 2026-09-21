@@ -17,14 +17,20 @@ const siteRoot = join(here, '..');
 const shardDir = join(siteRoot, 'src', 'public', 'data', 'roland-sc8850-01', 'algorithms');
 const slugs = JSON.parse(readFileSync(join(siteRoot, 'src', 'data', 'slugs.json'), 'utf8'));
 
-/** Every real shard for the one unit the archive currently has. */
+/**
+ * Every real shard for the one unit the archive currently has.
+ *
+ * The claim id is read out of the shard, never off its filename: a shard is
+ * named for the URL segment this module resolves, so taking the filename would
+ * feed a slug back in as an id and derive a slug for a claim that does not
+ * exist.
+ */
 function realClaims(): { id: string; title: unknown }[] {
   return readdirSync(shardDir)
     .filter((name) => name.endsWith('.json'))
     .map((name) => {
-      const id = name.slice(0, -'.json'.length);
       const shard = JSON.parse(readFileSync(join(shardDir, name), 'utf8'));
-      return { id, title: shard.title };
+      return { id: shard.id, title: shard.title };
     });
 }
 
