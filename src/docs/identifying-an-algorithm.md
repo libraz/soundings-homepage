@@ -164,3 +164,43 @@ section is a different effect.
 The curves beside it are the same model asked at every setting of the byte, with the
 settings a run actually read marked on them. The line between two readings is this
 project's interpolation, so it is drawn differently from the readings themselves.
+
+### What is checked about that implementation, and what is not
+
+Published code raises a question a reader cannot answer by looking: is this a final
+draft, or has it quietly stopped working? Three things are checked, and one important
+thing is not.
+
+**It compiles.** Every published example is compiled, at every release, by a check that
+fails the build rather than warning.
+
+**It returns what the same law returns.** The check runs each generated function at all
+128 settings of its byte and compares the result against an evaluation, in another
+language, of the very constants printed in the file. The two sides apply the same
+arithmetic to the same inputs, so what is left between them is the difference between
+two implementations of `exp` and `log` — the tolerance is set at that, not at a printing
+precision.
+
+**It returns what the figure above it draws.** Each of those values, rounded the way the
+chart rounds, must equal the plotted point exactly. This is the actual promise the page
+makes to a reader: the curve is what this code computes.
+
+**What is not checked is the one comparison that matters most: against the unit
+itself.** That comparison was made by the archive, and it was made against the *model* —
+not against this code. The code is a rendering of the model into C++ by this site, and
+nothing has ever played it into hardware and listened. A claim's standing says how the
+archive's comparison went; it says nothing about this file beyond the three checks above.
+
+### Six words for where a claim stands
+
+A claim page says its standing in one word before anything else, because the two facts
+underneath it fail apart and a reader should not have to work them back into a state.
+**Withdrawn** is a claim the archive no longer stands behind. **Closed** is a model that
+reproduced what the unit did. **Exhausted** is a claim that used every revision it was
+allowed — a limit on how long it was pursued, not a verdict on the model, which is why a
+model under an exhausted claim can still have reproduced the readings and is still drawn
+as one that did. **Not closed** is a model that was built, compared, and did not settle;
+the verdict beside it says whether that was the model's doing or the test's. **Undecided**
+is a comparison that ran and carries no verdict. **Not yet modelled** is a claim nothing
+has been compared against at all — which is not a failure, because nothing has happened
+yet that could have failed.
