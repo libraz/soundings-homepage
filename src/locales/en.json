@@ -413,7 +413,8 @@
       "measured": "A reading the archive recorded",
       "interpolated": "This site's interpolation between readings",
       "noValue": "The law returns no value for this byte",
-      "copyTsv": "Copy as TSV"
+      "copyTsv": "Copy as TSV",
+      "notClosed": "The values this claim's model returns are not tabulated here. The table is the code's own output, and code is published for a model that closed and for no other."
     },
     "codeStatus": {
       "generatedFrom": "Generated from the model file, not written by hand.",
@@ -509,6 +510,7 @@
     "chartsLede": "What the model answers at every setting of the byte, and, where the map names its readings, the settings a run actually read. The line between two readings is this project's interpolation rather than a measurement, so the two are drawn apart.",
     "chartOf": "the byte at {byte}",
     "chartNoByte": "the byte",
+    "chartNotDrawn": "This figure is not drawn. The model it would plot has not closed, and this map names no readings to set beside it — what would be left is a curve with nothing to check it against.",
     "modelCurve": "what the model answers",
     "readings": "what was read",
     "setting": "setting",
