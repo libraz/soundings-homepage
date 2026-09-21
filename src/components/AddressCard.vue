@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import type {
   AddressRecord,
+  AlgorithmLine,
   CitedDocument,
   Claim,
   Region,
@@ -14,6 +15,7 @@ import {
   writeClassWording,
 } from '../composables/useArchive';
 import { useI18n } from '../composables/useI18n';
+import ClaimTitle from './ClaimTitle.vue';
 import DocumentLink from './DocumentLink.vue';
 import RecordLink from './RecordLink.vue';
 import RecordLinks from './RecordLinks.vue';
@@ -37,6 +39,14 @@ const props = defineProps<{
   claims?: Claim[];
   /** The documents those claims came from, for the citation under each. */
   documents?: CitedDocument[];
+  /**
+   * The claims about what is behind this address, already narrowed to it.
+   *
+   * A third kind of record, kept apart from the measurements and from what a
+   * document states as it is in the archive. Empty where nothing claims this
+   * address, which is most of them: a claim is about a handful of addresses.
+   */
+  algorithms?: AlgorithmLine[];
 }>();
 
 const { t, full, list, resetOutcome, stated, statedIsQuoted, stimulus, route } = useI18n();
@@ -455,6 +465,39 @@ function verdictKind(verdict: string): string {
         />
       </div>
     </section>
+
+    <!--
+      What is claimed to be behind what was measured here, and how far
+      identifying it got. Last on the card and apart from both halves above it:
+      a measurement says what the unit answered and a document says what was
+      printed, and this says what is driving the byte -- which can be wrong in
+      ways neither of the others can. An address no claim reaches carries no
+      section at all, because there is no claim here to be absent.
+    -->
+    <section v-if="algorithms?.length" class="card__section behind">
+      <h3 class="sg-label">{{ t('algorithms.seeAlgorithm') }}</h3>
+      <ul class="behind__list">
+        <li v-for="line in algorithms" :key="line.id" class="behind__entry">
+          <a class="behind__link" :href="route(`/units/${unitId}/algorithms/${line.slug}`)">
+            <ClaimTitle :title="line.title" :named="line.named" :claim="line.claim" />
+          </a>
+          <!--
+            Where the archive stands on it, said on the way rather than on
+            arrival: a reader must not be sent from a measurement to a claim
+            the archive has withdrawn without being told so first. Ink for five
+            of the six standings; the accent for the one that means a model was
+            compared and it closed, which is the single thing it ever says.
+          -->
+          <span
+            class="behind__standing"
+            :class="{ 'behind__standing--closed': line.standing === 'closed' }"
+            :title="t(`algorithms.standingBody.${line.standing}`)"
+          >
+            {{ t(`algorithms.standing.${line.standing}`) }}
+          </span>
+        </li>
+      </ul>
+    </section>
   </article>
 </template>
 
@@ -777,6 +820,57 @@ function verdictKind(verdict: string): string {
 .stated :deep(.sg-cite) {
   display: inline-block;
   margin-top: 0.5rem;
+}
+
+/* The way out of this address and into what is claimed to drive it. Ruled off
+   from the two halves above rather than tinted: nothing here was measured, and
+   nothing here was printed either. */
+.behind {
+  border-top: 1px solid var(--sg-rule);
+  padding-top: var(--space-4);
+}
+
+.behind__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.behind__entry {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.75rem;
+  align-items: baseline;
+  padding: 0.3rem 0;
+}
+
+.behind__entry + .behind__entry {
+  border-top: 1px dotted var(--sg-rule);
+}
+
+.behind__link {
+  color: var(--vp-c-brand-1);
+  text-decoration: none;
+}
+
+.behind__link:hover {
+  text-decoration: underline;
+}
+
+/* Five of the six standings are what the archive says and nothing more, so they
+   are set in ink: the site's four hues say what a measurement was, which is a
+   different question from how far a reading of several of them got. */
+.behind__standing {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--color-text-tertiary);
+}
+
+/* The one exception, and the same mark the claim page puts on the same fact. */
+.behind__standing--closed {
+  color: var(--sg-accent-600);
+  font-weight: 500;
 }
 
 @media (max-width: 640px) {

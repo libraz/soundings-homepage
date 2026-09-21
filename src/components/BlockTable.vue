@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import type {
   AddressRecord,
+  AlgorithmSummary,
   BlockShard,
   ClaimShard,
   Region,
@@ -55,6 +56,18 @@ const { data: claimShard } = useArchiveFile<ClaimShard>(
   () => `${props.unitId}/claims/${props.block}.json`,
 );
 
+/**
+ * The unit's claims about what is behind its measurements, if any were made.
+ *
+ * The index carries the addresses each claim is about, so the join is done
+ * here rather than sharded per block: a claim reaches a handful of addresses
+ * across the unit, and a shard per block would hold the same claim many times
+ * over. Absent for a unit nothing has been claimed about, which is ordinary.
+ */
+const { data: algorithms } = useArchiveFile<AlgorithmSummary>(
+  () => `${props.unitId}/algorithms.json`,
+);
+
 const loading = computed(() => indexLoading.value || shardLoading.value);
 const failed = computed(() => indexError.value || shardError.value);
 
@@ -64,6 +77,16 @@ function documentOf(id: string) {
 
 function claimsFor(record: AddressRecord) {
   return claimShard.value?.claims.filter((claim) => claim.a === record.a);
+}
+
+/**
+ * The claims that name this exact address.
+ *
+ * Several reach one address and most addresses are reached by none. Both are
+ * answered by the list itself: the card draws nothing where it is empty.
+ */
+function algorithmsFor(record: AddressRecord) {
+  return algorithms.value?.inferences.filter((line) => line.addresses.includes(record.a));
 }
 
 /** The block as the unit writes it: the route carries a dash, the panel a space. */
@@ -349,6 +372,7 @@ onMounted(() => {
                     :index="regionIndex"
                     :claims="claimsFor(record)"
                     :documents="claimShard?.documents"
+                    :algorithms="algorithmsFor(record)"
                   />
                 </td>
               </tr>
