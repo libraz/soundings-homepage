@@ -363,7 +363,63 @@
       "breaks_down": "the model followed the readings and then stopped following them",
       "domain_too_narrow": "the model was only asked where it was never going to fail",
       "candidates_too_few": "nothing was run against it that could have beaten it",
-      "rejected": "the model did not reproduce the readings"
+      "rejected": "the model did not reproduce the readings",
+      "null": "the comparison was made and carries no verdict yet"
+    },
+    "standing": {
+      "withdrawn": "Withdrawn",
+      "closed": "Closed",
+      "exhausted": "Exhausted",
+      "failed": "Not closed",
+      "undecided": "Undecided",
+      "unmodelled": "Not yet modelled"
+    },
+    "standingBody": {
+      "withdrawn": "The archive no longer stands behind this claim.",
+      "closed": "A model built from this claim was compared against the unit and reproduced what it did. An implementation is published for it, generated from the model and checked against the same law.",
+      "exhausted": "This claim used every revision it was allowed and never settled. That is a limit on how long it was pursued, not a verdict on the model it produced — where a model exists, its own verdict is shown apart from this one.",
+      "failed": "A model built from this claim was compared against the unit, and the comparison did not close. That is not always because the model was wrong — the test itself can be the reason. The verdict shown beside this standing says which happened here.",
+      "undecided": "A model built from this claim was compared against the unit. The comparison ran, and carries no verdict yet.",
+      "unmodelled": "No model has been built from this claim yet. That is not a verdict — nothing has been compared, so there is nothing here that could have failed."
+    },
+    "summary": {
+      "about": "What this is about",
+      "standingAxis": "The archive's standing",
+      "verdictAxis": "The model's verdict",
+      "quantity": "Quantity",
+      "range": "Range",
+      "steps": "Steps"
+    },
+    "ledger": {
+      "title": "The ledger",
+      "checked": "What was checked",
+      "notChecked": "What was not",
+      "comparedAgainst": "Records compared against",
+      "domain": "Domain asked",
+      "residual": "Residual",
+      "gatesPassed": "Gates passed",
+      "gatesFailed": "Gates not passed",
+      "gatesNotStated": "Gates not stated",
+      "gatesNotStatedBody": "No verdict was recorded for this gate. That is not the same as passing it or failing it — it was never put to the test.",
+      "outsideDomain": "Outside the domain asked",
+      "alternatives": "Readings the same evidence still leaves standing",
+      "refutedBy": "What would show it wrong",
+      "excluded": "Records excluded"
+    },
+    "table": {
+      "byte": "Byte",
+      "value": "Value",
+      "source": "Where this came from",
+      "measured": "A reading the archive recorded",
+      "interpolated": "This site's interpolation between readings",
+      "noValue": "The law returns no value for this byte",
+      "copyTsv": "Copy as TSV"
+    },
+    "codeStatus": {
+      "generatedFrom": "Generated from the model file, not written by hand.",
+      "arithmetic": "The difference equations are the ordinary realisations of the sections the model names — this site's arithmetic, not a measurement.",
+      "checkedBy": "A check compiles this file and compares what it returns against the same law the chart above plots.",
+      "notComparedWithHardware": "Not compared with real hardware: the comparison that closed this claim was made against the model, not against this code."
     },
     "state": "State in the archive",
     "scope": "Scope",
@@ -463,7 +519,6 @@
     "archiveWordsBody": "Shown as they were written. The short statements above are translated; these paragraphs are the archive writing in its own voice and are revised as it goes.",
     "backToAll": "All claims for this unit",
     "seeAlgorithm": "What is behind it",
-    "seeAlgorithmCount": "{count} claim(s) about what is behind this",
     "search": "Search",
     "methodLink": "How an algorithm is identified",
     "closedOn": "some claim has closed on {count}",
