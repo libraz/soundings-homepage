@@ -298,7 +298,7 @@ function checkExample(example, shardCharts, workDir) {
 
   for (const entry of correspondence) {
     const cppByByte = rowsById.get(entry.chartId);
-    if (!cppByByte || cppByByte.size !== 128) {
+    if (cppByByte?.size !== 128) {
       problems.push(`${tag}: ${entry.chartId} printed ${cppByByte?.size ?? 0} value(s), not 128`);
       continue;
     }
