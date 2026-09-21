@@ -93,7 +93,7 @@ export function algorithmPaths(locale: Locale): RouteEntry<AlgorithmParams>[] {
     (unit.algorithms ?? []).map((algorithm) => ({
       params: {
         unit: unit.id,
-        algorithm: algorithm.id,
+        algorithm: algorithm.slug,
         model: `${unit.manufacturer} ${unit.model}`,
       },
       content: `# ${algorithm.title ?? strings.algorithms.title}`,
