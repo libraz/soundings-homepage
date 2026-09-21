@@ -135,7 +135,7 @@ function wrap(text, prefix, width = 88) {
 /* -------------------------------------------------------------------------- */
 
 /** `roland-sc8850-01` → `roland_sc8850_01`; `01 20` → `type_01_20`. */
-function identifier(text) {
+export function identifier(text) {
   return String(text)
     .trim()
     .replace(/[^0-9A-Za-z]+/g, '_')
@@ -167,12 +167,35 @@ function byteName(address) {
 }
 
 /** `corner_hz` → `CornerHz`. */
-function camel(text) {
+export function camel(text) {
   return String(text)
     .split(/[^0-9A-Za-z]+/)
     .filter(Boolean)
     .map((part) => part[0].toUpperCase() + part.slice(1))
     .join('');
+}
+
+/**
+ * The function name a chain map's C++ realisation is given: the stage kind
+ * in camel case, its position in the chain, and the parameter key it carries.
+ *
+ * Exported so `check-examples.mjs` can derive the chart-to-function
+ * correspondence from a model file on its own, rather than reading it out of
+ * a field this site would otherwise have to add to the published shard.
+ * @param {string} stageKind @param {number} index @param {string} key
+ */
+export function chainMapFunctionName(stageKind, index, key) {
+  return `${stageKind.replace(/-\w/g, (m) => m[1].toUpperCase())}${index}${camel(key)}`;
+}
+
+/**
+ * The function name a table map's C++ realisation is given, keyed by the
+ * range a document prints against the address. Exported for the same reason
+ * as {@link chainMapFunctionName}.
+ * @param {string} range
+ */
+export function tableFunctionName(range) {
+  return `at${camel(identifier(range))}`;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -213,7 +236,7 @@ function lti(args) {
     if (value && typeof value === 'object' && value.map) {
       const why = unreadable(value.map);
       if (why) throw new Error(`${stage.kind}.${key} carries ${why}`);
-      const name = `${stage.kind.replace(/-\w/g, (m) => m[1].toUpperCase())}${index}${camel(key)}`;
+      const name = chainMapFunctionName(stage.kind, index, key);
       maps.push(asCpp(value.map, name));
       if (needsCmath(value.map)) cmath = true;
       if (value.byte && !bytes.some((entry) => entry.address === value.byte)) {
@@ -626,7 +649,7 @@ function tables(args) {
   for (const [range, table] of Object.entries(held)) {
     const why = unreadable(table);
     if (why) throw new Error(`the table printed against ${JSON.stringify(range)} is ${why}`);
-    const name = `at${camel(identifier(range))}`;
+    const name = tableFunctionName(range);
     functions.push(`// printed range: ${range}`);
     if (typeof table.why_it_ends_early === 'string') {
       functions.push(...wrap(table.why_it_ends_early, '// '));

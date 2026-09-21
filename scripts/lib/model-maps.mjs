@@ -200,7 +200,7 @@ function marksOf(map) {
  * error on the wire and read as a precision no measurement here has.
  * @param {number} value
  */
-function round(value) {
+export function round(value) {
   if (!Number.isFinite(value) || value === 0) return value;
   return Number(value.toPrecision(6));
 }
