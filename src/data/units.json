@@ -63,18 +63,23 @@
         "contrast",
         "decay",
         "efx-bands",
+        "efx-excursion",
+        "efx-jumps",
         "efx-map",
         "efx-motion",
         "efx-orders",
+        "efx-pair",
         "efx-params",
         "efx-partials",
         "efx-rate",
         "efx-sort",
         "efx-sway",
+        "efx-teeth",
         "efx-time",
         "hold-probe",
         "motion",
         "offsets",
+        "output-map",
         "phase",
         "port-read",
         "port-send",
@@ -669,12 +674,24 @@
           "title": "Stereo Flanger · Stereo Chorus"
         },
         {
+          "id": "0124-a-step-byte-clocks-a-hold-on-the-other-rate-byte",
+          "title": "Step Flanger — Rate / Step Rate"
+        },
+        {
           "id": "0142-a-filter-byte-sits-on-one-pole",
           "title": "Stereo Chorus — Pre Filter / Cutoff"
         },
         {
           "id": "0150-a-damping-byte-sits-on-the-cheapest-pole",
           "title": "Stereo Delay — HF Damp"
+        },
+        {
+          "id": "0160-a-pitch-byte-is-read-out-of-a-window-the-mode-byte-picks",
+          "title": "2 Pitch Shifter — Coarse 1 / Fine 1 / Coarse 2 +2"
+        },
+        {
+          "id": "0161-a-feedback-shifters-mode-byte-picks-the-same-five-lengths",
+          "title": "Fb P.Shifter — Feedback / Mode"
         },
         {
           "id": "0172-a-degrader-byte-is-a-rate-and-something-else",
@@ -686,7 +703,7 @@
         },
         {
           "id": "1107-a-renumbered-rotary-is-one-rotor-above-the-transient",
-          "title": "Rotary · PH / Rotary"
+          "title": "Rotary · Rotary Multi · OD / Rotary +1"
         },
         {
           "id": "1108-a-multi-reaches-the-single-types-block",
@@ -694,7 +711,7 @@
         },
         {
           "id": "a-flanger-named-inside-a-larger-type-is-the-one-that-stands-alone",
-          "title": "Stereo Flanger · Cho→ Flanger · Cho / Flanger"
+          "title": "Stereo Flanger · OD→ Flanger · DS → Flanger +4"
         },
         {
           "id": "amp-four-fixed-curves-after-the-drive-stage",
@@ -769,7 +786,7 @@
           "title": "Stereo-EQ · GTR Multi 2 · Clean Gt Multi 1"
         }
       ],
-      "archiveBytes": 75527629,
+      "archiveBytes": 77610048,
       "catalogues": {
         "tones": true,
         "effects": true,
