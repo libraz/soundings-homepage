@@ -110,7 +110,7 @@ const strip = computed(() => {
       // type none reaches opens what *was* measured of it, which is the honest
       // answer to "and this one?" rather than a dead square.
       href: claims.length
-        ? route(`/units/${props.unitId}/algorithms/${claims[0].id}`)
+        ? route(`/units/${props.unitId}/algorithms/${claims[0].slug}`)
         : route(`/units/${props.unitId}/effects#type-${effect.type.replace(/ /g, '-')}`),
     };
   });
@@ -279,7 +279,7 @@ function saysIsQuoted(line: AlgorithmLine): boolean {
 
         <ol class="claims">
           <li v-for="line in rows" :key="line.id" class="claim">
-            <a class="claim__link" :href="route(`/units/${unitId}/algorithms/${line.id}`)">
+            <a class="claim__link" :href="route(`/units/${unitId}/algorithms/${line.slug}`)">
               <span class="claim__head">
                 <LevelChip :level="line.level" />
                 <ClaimTitle :title="line.title" :named="line.named" :claim="line.claim" />

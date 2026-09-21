@@ -113,8 +113,8 @@ const claimsByType = computed(() => {
   return held;
 });
 
-function algorithmHref(id: string): string {
-  return route(`/units/${props.unitId}/algorithms/${id}`);
+function algorithmHref(slug: string): string {
+  return route(`/units/${props.unitId}/algorithms/${slug}`);
 }
 
 /**
@@ -320,7 +320,7 @@ watch(
                   <p class="sg-label behind__head">{{ t('algorithms.seeAlgorithm') }}</p>
                   <ul class="behind__list">
                     <li v-for="line in claimsByType.get(effect.type)" :key="line.id">
-                      <a class="behind__link" :href="algorithmHref(line.id)">
+                      <a class="behind__link" :href="algorithmHref(line.slug)">
                         <LevelChip :level="line.level" />
                         <span class="behind__name">
                           <ClaimTitle

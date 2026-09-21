@@ -610,8 +610,13 @@ export interface AlgorithmShard {
 /** One line of the unit's algorithm index. */
 export interface AlgorithmLine {
   id: string;
-  /** the route segment, assigned by the caller rather than read here */
-  slug: string | null;
+  /**
+   * The route segment this line points a reader at. Always present: a claim no
+   * printed name and no hand-authored entry can slug keeps its archive id as
+   * its segment rather than having none, and `yarn check:algorithms` fails on
+   * that rather than the page doing.
+   */
+  slug: string;
   level: AlgorithmLevel;
   standing: AlgorithmStanding;
   why: string;

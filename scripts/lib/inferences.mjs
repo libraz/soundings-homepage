@@ -613,6 +613,18 @@ function tailOf(held) {
 /* -------------------------------------------------------------------------- */
 
 /**
+ * A value the caller was supposed to have set, or a failure naming it.
+ * @template T
+ * @param {T | null | undefined} value
+ * @param {string} what
+ * @returns {T}
+ */
+function required(value, what) {
+  if (value === null || value === undefined) throw new Error(what);
+  return value;
+}
+
+/**
  * The index behind the unit's algorithm page: one line per claim, and the tally
  * the page opens with.
  * @param {any[]} inferences
@@ -628,8 +640,11 @@ export function indexOf(inferences) {
     inferences: inferences.map((inference) => ({
       id: inference.id,
       // Assigned by the caller, not read from `src/data/slugs.json` here — the
-      // route this line points a reader at.
-      slug: inference.slug ?? null,
+      // route this line points a reader at. `resolveSlug()` always answers, so
+      // a missing one is this index being built before the slugs were assigned
+      // rather than a claim that has none, and it fails here rather than
+      // writing a line that points a reader at nothing.
+      slug: required(inference.slug, `${inference.id} reached the index with no slug`),
       level: inference.level,
       standing: inference.standing,
       why: inference.why,
