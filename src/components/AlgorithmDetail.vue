@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { AlgorithmShard } from '../composables/useArchive';
 import { useArchiveFile } from '../composables/useArchive';
 import { useI18n } from '../composables/useI18n';
 import ArchiveProse from './ArchiveProse.vue';
 import ByteMapChart from './ByteMapChart.vue';
+import ByteTable from './ByteTable.vue';
+import ClaimLedger from './ClaimLedger.vue';
+import ClaimSummary from './ClaimSummary.vue';
 import ClaimTitle from './ClaimTitle.vue';
 import DocumentLink from './DocumentLink.vue';
 import LevelChip from './LevelChip.vue';
@@ -13,12 +16,17 @@ import RecordLink from './RecordLink.vue';
 /**
  * One claim about what is behind the measurements, in full.
  *
- * The page is ordered the way the claim has to be read. How far it got comes
- * first, because everything below means something different at each level; then
- * what it says; then the implementation, but only where the archive's own
- * verdict closed it; then the curves and the comparison that produced that
- * verdict; then the evidence, split four ways; then the readings the same
- * evidence still leaves standing.
+ * The page is ordered by what a reader came for. What the claim is about and
+ * how far it got, then the ledger of what was checked and what was not, then
+ * the figures with the numbers behind them, then the implementation. The
+ * archive's own argument — the claim at length, the comparison in detail, the
+ * evidence, the readings still standing — sits below all of that, folded shut.
+ *
+ * **Folding is not shortening.** Every word the record wrote is inside, in the
+ * order it wrote it; what changes is that a reader chooses to meet it. A
+ * `<summary>` says how much each fold holds, as a count rather than a sentence,
+ * so the page does not describe its own contents at length in the act of
+ * putting them away.
  *
  * Two languages sit on this page and the seam between them is marked rather
  * than hidden. The four short statements — what it claims, what it is called,
@@ -129,6 +137,19 @@ function flat(value: unknown): { key: string; text: string }[] | null {
   return entries.map(([key, held]) => ({ key: key.replace(/_/g, ' '), text: String(held) }));
 }
 
+/**
+ * Why the residual leans the way it does, read apart from the figures.
+ *
+ * Several classes record the figures under their own names and carry the same
+ * `why` beside them. Read only off the shape the schema asks for, that sentence
+ * would be on the page for some claims and gone for others — and a sentence the
+ * record wrote that no page shows is the one thing this site may not do.
+ */
+const residualWhy = computed(() => {
+  const held = data.value?.reproduces?.residual as Record<string, unknown> | null | undefined;
+  return held && typeof held.why === 'string' ? held.why : null;
+});
+
 const domain = computed(() => {
   const held = data.value?.reproduces?.domain as Record<string, unknown> | null | undefined;
   if (!held) return null;
@@ -143,6 +164,96 @@ const domain = computed(() => {
     outside: typeof held.outside === 'string' ? held.outside : null,
   };
 });
+
+/** What a published implementation is, and what nothing here checked about it. */
+const CODE_STATUS = ['generatedFrom', 'arithmetic', 'checkedBy', 'notComparedWithHardware'];
+
+/**
+ * How much each folded section holds.
+ *
+ * A count rather than a description: the summary line of a fold is read while
+ * deciding whether to open it, and a sentence there is the same paragraph the
+ * fold was closed to put away. Each is the number of separate things inside —
+ * statements, records, gates, readings — so two folds of the same size read as
+ * the same size.
+ */
+const statements = computed(() => {
+  const held = data.value;
+  if (!held) return 0;
+  return [
+    held.claim,
+    held.named ?? held.whyNotNamed,
+    held.adds,
+    held.refutedBy,
+    held.couldHaveBeenRefutedBy,
+  ].filter((sentence) => typeof sentence === 'string' && sentence.length > 0).length;
+});
+
+const reproduced = computed(() => {
+  const held = data.value?.reproduces;
+  if (!held) return 0;
+  return (
+    (data.value?.models.length ?? 0) +
+    (held.comparedAgainst.records.length > 0 ? 1 : 0) +
+    (domain.value ? 1 : 0) +
+    (residual.value || residualWhy.value ? 1 : 0) +
+    residualExtra.value.length +
+    held.gates.length
+  );
+});
+
+const grounded = computed(() => {
+  const held = data.value?.grounds;
+  if (!held) return 0;
+  return (
+    held.measurements.length +
+    held.documentRows.length +
+    held.eraPriors.length +
+    held.community.length
+  );
+});
+
+/**
+ * A fragment that lands inside a fold opens it.
+ *
+ * Safari and Firefox scroll to a target inside a closed `<details>` without
+ * opening it, so the ledger's links into the sections below would land a reader
+ * on a shut fold and nothing else. Every ancestor of the target is opened, on
+ * arrival and on every later change of the fragment, because the first is a
+ * link followed from another page and the second is one followed from this one.
+ */
+function openTo(fragment: string): void {
+  if (typeof document === 'undefined' || fragment.length < 2) return;
+  const target = document.getElementById(decodeURIComponent(fragment.slice(1)));
+  if (!target) return;
+  for (let node: Element | null = target; node; node = node.parentElement) {
+    if (node.tagName === 'DETAILS') node.setAttribute('open', '');
+  }
+  target.scrollIntoView?.();
+}
+
+function openToHash(): void {
+  if (typeof window !== 'undefined') openTo(window.location.hash);
+}
+
+onMounted(() => {
+  window.addEventListener('hashchange', openToHash);
+});
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') window.removeEventListener('hashchange', openToHash);
+});
+
+// The shard arrives after the page does, so the section a fragment names does
+// not exist until it has been rendered.
+watch(
+  data,
+  async () => {
+    await nextTick();
+    openToHash();
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
@@ -151,14 +262,14 @@ const domain = computed(() => {
     <p v-else-if="error" class="claim__state">{{ t('common.loadFailed') }}</p>
 
     <template v-else-if="data">
-      <p class="claim__back">
+      <p class="claim__back" data-section="back">
         <a :href="route(`/units/${unitId}/algorithms`)">{{ t('algorithms.backToAll') }}</a>
       </p>
 
       <!-- How far it got, before anything it says: every section below reads
            differently at each level, and a reader meeting the claim first would
            have to come back and re-read it. -->
-      <header class="head sg-panel">
+      <header class="head sg-panel" data-section="header">
         <LevelChip :level="data.level" :why="data.why" expanded />
 
         <!-- The name a manual prints is the page's own `h1`, supplied by the
@@ -228,63 +339,37 @@ const domain = computed(() => {
         </p>
       </header>
 
-      <section class="panel sg-panel">
-        <h2 class="sg-label panel__head">{{ t('algorithms.claim') }}</h2>
-        <ArchiveProse
-          class="prose"
-          :class="{ 'sg-quoted': claimedIsQuoted(data.claim) }"
-          :runs="claimedProse(data.claim)"
-        />
+      <ClaimSummary data-section="summary" :unit-id="unitId" :shard="data" />
+      <ClaimLedger data-section="ledger" :unit-id="unitId" :shard="data" />
 
-        <template v-if="data.named">
-          <h3 class="sg-label panel__sub">{{ t('algorithms.named') }}</h3>
-          <ArchiveProse
-            class="prose"
-            :class="{ 'sg-quoted': claimedIsQuoted(data.named) }"
-            :runs="claimedProse(data.named)"
-          />
-        </template>
-        <template v-else-if="data.whyNotNamed">
-          <h3 class="sg-label panel__sub">{{ t('algorithms.notNamed') }}</h3>
-          <p class="panel__lede">{{ t('algorithms.notNamedBody') }}</p>
-          <ArchiveProse
-            class="prose"
-            :class="{ 'sg-quoted': quoting }"
-            :runs="verbatimProse(data.whyNotNamed)"
-          />
-        </template>
-
-        <h3 class="sg-label panel__sub">{{ t('algorithms.adds') }}</h3>
-        <p class="panel__lede">{{ t('algorithms.addsBody') }}</p>
-        <ArchiveProse
-          class="prose"
-          :class="{ 'sg-quoted': claimedIsQuoted(data.adds) }"
-          :runs="claimedProse(data.adds)"
-        />
-
-        <h3 class="sg-label panel__sub">{{ t('algorithms.refutedBy') }}</h3>
-        <ArchiveProse
-          class="prose"
-          :class="{ 'sg-quoted': claimedIsQuoted(data.refutedBy) }"
-          :runs="claimedProse(data.refutedBy)"
-        />
-
-        <template v-if="data.couldHaveBeenRefutedBy">
-          <h3 class="sg-label panel__sub">{{ t('algorithms.couldHaveBeenRefutedBy') }}</h3>
-          <ArchiveProse
-            class="prose"
-            :class="{ 'sg-quoted': quoting }"
-            :runs="verbatimProse(data.couldHaveBeenRefutedBy)"
-          />
-        </template>
+      <!-- The figures, and under each of them the numbers it was drawn from. A
+           reader arrives holding a byte and wanting what it answers; the
+           implementation is how that answer is produced rather than what was
+           asked for, so it comes after. -->
+      <section v-if="data.charts.length" class="panel sg-panel" data-section="figures">
+        <h2 class="sg-label panel__head">{{ t('algorithms.charts') }}</h2>
+        <p class="panel__lede">{{ t('algorithms.chartsLede') }}</p>
+        <div class="charts">
+          <div v-for="chart in data.charts" :key="chart.id" class="figure">
+            <ByteMapChart :chart="chart" :unit-id="unitId" />
+            <ByteTable :unit-id="unitId" :shard="data" :chart="chart" />
+          </div>
+        </div>
       </section>
 
       <!-- The implementation. Published for an identified claim and no other. -->
-      <section class="panel sg-panel">
+      <section class="panel sg-panel" data-section="implementation">
         <h2 class="sg-label panel__head">{{ t('algorithms.example') }}</h2>
 
         <template v-if="data.examples.length">
-          <p class="panel__lede">{{ t('algorithms.exampleLede') }}</p>
+          <!-- Where the code stands, as four statements rather than a
+               paragraph. Two of them say what nothing here checked, which is
+               the half a paragraph loses first. -->
+          <ul class="status">
+            <li v-for="line in CODE_STATUS" :key="line" class="status__item">
+              {{ t(`algorithms.codeStatus.${line}`) }}
+            </li>
+          </ul>
           <article v-for="example in data.examples" :key="example.model" class="code">
             <div class="code__head">
               <span class="sg-label">
@@ -318,24 +403,82 @@ const domain = computed(() => {
           </article>
         </template>
 
-        <p v-else class="panel__lede">{{ t('algorithms.noExampleOpen') }}</p>
+        <!-- The absence, and the archive's own reason for it. One sentence
+             covering every open claim said only that the claim was open; the
+             standing says which of the six situations it is, and they fail in
+             different ways. -->
+        <template v-else>
+          <p class="none">{{ t('algorithms.noExample') }}</p>
+          <p class="panel__lede">{{ t(`algorithms.standingBody.${data.standing}`) }}</p>
+        </template>
       </section>
 
-      <section v-if="data.charts.length" class="panel sg-panel">
-        <h2 class="sg-label panel__head">{{ t('algorithms.charts') }}</h2>
-        <p class="panel__lede">{{ t('algorithms.chartsLede') }}</p>
-        <div class="charts">
-          <ByteMapChart
-            v-for="chart in data.charts"
-            :key="chart.id"
-            :chart="chart"
-            :unit-id="unitId"
+      <details class="fold sg-panel" data-section="claim">
+        <summary class="fold__summary">
+          <span class="sg-label">{{ t('algorithms.claim') }}</span>
+          <span class="sg-readout fold__count">{{ statements }}</span>
+        </summary>
+        <ArchiveProse
+          class="prose"
+          :class="{ 'sg-quoted': claimedIsQuoted(data.claim) }"
+          :runs="claimedProse(data.claim)"
+        />
+
+        <template v-if="data.named">
+          <h3 class="sg-label panel__sub">{{ t('algorithms.named') }}</h3>
+          <ArchiveProse
+            class="prose"
+            :class="{ 'sg-quoted': claimedIsQuoted(data.named) }"
+            :runs="claimedProse(data.named)"
           />
-        </div>
-      </section>
+        </template>
+        <template v-else-if="data.whyNotNamed">
+          <h3 class="sg-label panel__sub">{{ t('algorithms.notNamed') }}</h3>
+          <p class="panel__lede">{{ t('algorithms.notNamedBody') }}</p>
+          <ArchiveProse
+            class="prose"
+            :class="{ 'sg-quoted': quoting }"
+            :runs="verbatimProse(data.whyNotNamed)"
+          />
+        </template>
 
-      <section v-if="data.reproduces" class="panel sg-panel">
-        <h2 class="sg-label panel__head">{{ t('algorithms.reproduces') }}</h2>
+        <h3 class="sg-label panel__sub">{{ t('algorithms.adds') }}</h3>
+        <p class="panel__lede">{{ t('algorithms.addsBody') }}</p>
+        <ArchiveProse
+          class="prose"
+          :class="{ 'sg-quoted': claimedIsQuoted(data.adds) }"
+          :runs="claimedProse(data.adds)"
+        />
+
+        <!-- The ledger reports that this statement exists and never quotes it,
+             so its link has to arrive here. -->
+        <h3 id="refuted-by" class="sg-label panel__sub">{{ t('algorithms.refutedBy') }}</h3>
+        <ArchiveProse
+          class="prose"
+          :class="{ 'sg-quoted': claimedIsQuoted(data.refutedBy) }"
+          :runs="claimedProse(data.refutedBy)"
+        />
+
+        <template v-if="data.couldHaveBeenRefutedBy">
+          <h3 class="sg-label panel__sub">{{ t('algorithms.couldHaveBeenRefutedBy') }}</h3>
+          <ArchiveProse
+            class="prose"
+            :class="{ 'sg-quoted': quoting }"
+            :runs="verbatimProse(data.couldHaveBeenRefutedBy)"
+          />
+        </template>
+      </details>
+
+      <details
+        v-if="data.reproduces"
+        id="reproduces"
+        class="fold sg-panel"
+        data-section="reproduces"
+      >
+        <summary class="fold__summary">
+          <span class="sg-label">{{ t('algorithms.reproduces') }}</span>
+          <span class="sg-readout fold__count">{{ reproduced }}</span>
+        </summary>
         <p class="panel__lede">{{ t('algorithms.reproducesLede') }}</p>
 
         <dl class="facts">
@@ -380,27 +523,29 @@ const domain = computed(() => {
           </template>
         </template>
 
-        <template v-if="residual">
+        <template v-if="residual || residualWhy">
           <h3 class="sg-label panel__sub">{{ t('algorithms.residual') }}</h3>
-          <p class="figures">
-            <span class="figures__item">
-              <span class="sg-readout figures__value">{{ residual.median }}</span>
-              <span class="sg-label">{{ t('algorithms.residualMedian') }}</span>
-            </span>
-            <span class="figures__item">
-              <span class="sg-readout figures__value">{{ residual.worst }}</span>
-              <span class="sg-label">{{ t('algorithms.residualWorst') }}</span>
-            </span>
-            <span class="figures__unit">{{ residual.unit }}</span>
-          </p>
-          <p class="panel__lede">
-            {{ residual.structured ? t('algorithms.structured') : t('algorithms.unstructured') }}
-          </p>
+          <template v-if="residual">
+            <p class="figures">
+              <span class="figures__item">
+                <span class="sg-readout figures__value">{{ residual.median }}</span>
+                <span class="sg-label">{{ t('algorithms.residualMedian') }}</span>
+              </span>
+              <span class="figures__item">
+                <span class="sg-readout figures__value">{{ residual.worst }}</span>
+                <span class="sg-label">{{ t('algorithms.residualWorst') }}</span>
+              </span>
+              <span class="figures__unit">{{ residual.unit }}</span>
+            </p>
+            <p class="panel__lede">
+              {{ residual.structured ? t('algorithms.structured') : t('algorithms.unstructured') }}
+            </p>
+          </template>
           <ArchiveProse
-            v-if="residual.why"
+            v-if="residualWhy"
             class="prose"
             :class="{ 'sg-quoted': quoting }"
-            :runs="verbatimProse(residual.why)"
+            :runs="verbatimProse(residualWhy)"
           />
         </template>
 
@@ -457,10 +602,13 @@ const domain = computed(() => {
             </li>
           </ul>
         </template>
-      </section>
+      </details>
 
-      <section class="panel sg-panel">
-        <h2 class="sg-label panel__head">{{ t('algorithms.grounds') }}</h2>
+      <details class="fold sg-panel" data-section="grounds">
+        <summary class="fold__summary">
+          <span class="sg-label">{{ t('algorithms.grounds') }}</span>
+          <span class="sg-readout fold__count">{{ grounded }}</span>
+        </summary>
         <p class="panel__lede">{{ t('algorithms.groundsLede') }}</p>
 
         <template v-if="data.grounds.measurements.length">
@@ -541,10 +689,18 @@ const domain = computed(() => {
             </li>
           </ul>
         </template>
-      </section>
+      </details>
 
-      <section v-if="data.alternatives.length" class="panel sg-panel">
-        <h2 class="sg-label panel__head">{{ t('algorithms.alternatives') }}</h2>
+      <details
+        v-if="data.alternatives.length"
+        id="alternatives"
+        class="fold sg-panel"
+        data-section="alternatives"
+      >
+        <summary class="fold__summary">
+          <span class="sg-label">{{ t('algorithms.alternatives') }}</span>
+          <span class="sg-readout fold__count">{{ data.alternatives.length }}</span>
+        </summary>
         <p class="panel__lede">{{ t('algorithms.alternativesLede') }}</p>
         <ul class="priors">
           <li v-for="(alternative, index) in data.alternatives" :key="index" class="prior">
@@ -576,10 +732,13 @@ const domain = computed(() => {
             </p>
           </li>
         </ul>
-      </section>
+      </details>
 
-      <section v-if="data.extra.length" class="panel sg-panel">
-        <h2 class="sg-label panel__head">{{ t('algorithms.notes') }}</h2>
+      <details v-if="data.extra.length" class="fold sg-panel" data-section="notes">
+        <summary class="fold__summary">
+          <span class="sg-label">{{ t('algorithms.notes') }}</span>
+          <span class="sg-readout fold__count">{{ data.extra.length }}</span>
+        </summary>
         <p class="panel__lede">{{ t('algorithms.archiveWordsBody') }}</p>
         <dl class="notes">
           <template v-for="note in data.extra" :key="note.key">
@@ -593,9 +752,9 @@ const domain = computed(() => {
             </dd>
           </template>
         </dl>
-      </section>
+      </details>
 
-      <p v-if="data.whatItWouldChange.length" class="reach">
+      <p v-if="data.whatItWouldChange.length" class="reach" data-section="reach">
         <span class="sg-label">{{ t('algorithms.whatItWouldChange') }}</span>
         <a
           v-for="other in data.whatItWouldChange"
@@ -727,8 +886,43 @@ const domain = computed(() => {
   word-break: break-all;
 }
 
-.panel {
+.panel,
+.fold {
   padding: var(--space-5);
+}
+
+/* A fold is a panel that starts shut. The marker is the site's own hairline
+   rather than the browser's triangle, which is the one piece of chrome on the
+   page that belongs to a different instrument. */
+.fold__summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  cursor: pointer;
+  list-style: none;
+}
+
+.fold__summary::-webkit-details-marker {
+  display: none;
+}
+
+.fold[open] .fold__summary {
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--sg-rule-soft);
+}
+
+/* How much is inside, as a figure. A sentence here is the paragraph the fold
+   was closed to put away. */
+.fold__count {
+  font-size: 0.78rem;
+  color: var(--color-text-tertiary);
+}
+
+.fold__summary:hover .sg-label,
+.fold__summary:focus-visible .sg-label {
+  color: var(--vp-c-brand-1);
 }
 
 .panel__head {
@@ -850,6 +1044,35 @@ const domain = computed(() => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
   gap: var(--space-4);
+}
+
+/* The curve and the numbers it was drawn from are one thing, so they sit in one
+   cell of the grid rather than in two columns that scroll apart. */
+.figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* What the published code is, and what nothing here checked about it. */
+.status {
+  list-style: none;
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+  max-width: var(--sg-measure);
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--color-text-tertiary);
+}
+
+/* An absence, said plainly and set in the reading face: it is this site
+   speaking about the claim rather than the archive speaking. */
+.none {
+  margin: 0 0 var(--space-2);
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
 }
 
 .figures {
