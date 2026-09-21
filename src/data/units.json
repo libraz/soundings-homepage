@@ -643,154 +643,191 @@
       "algorithms": [
         {
           "id": "0100-a-chain-of-four-sections-and-an-output-gain",
+          "slug": "stereo-eq",
           "title": "Stereo-EQ"
         },
         {
           "id": "0101-eight-fixed-sections-driven-by-one-width-byte",
+          "slug": "spectrum",
           "title": "Spectrum — Band 1 / Band 2 / Band 3 +7"
         },
         {
           "id": "0110-a-drive-byte-is-a-gain-in-front-of-a-fixed-curve",
+          "slug": "drive",
           "title": "Overdrive · Distortion"
         },
         {
           "id": "0120-eight-allpass-sections-summed-with-the-dry",
+          "slug": "phaser-manual-mix",
           "title": "Phaser — Manual / Mix"
         },
         {
           "id": "0120-the-resonance-byte-closes-a-loop",
+          "slug": "phaser-reso",
           "title": "Phaser — Reso"
         },
         {
           "id": "0122-a-rotary-rate-byte-aims-a-rotor-and-the-rotor-stops-short",
+          "slug": "rotary-low-slow-hi-slow",
           "title": "Rotary — Low Slow / Hi Slow"
         },
         {
           "id": "0122-an-acceleration-byte-is-four-bits-and-a-multiplier",
+          "slug": "rotary-low-accl-hi-accl",
           "title": "Rotary — Low Accl / Hi Accl"
         },
         {
           "id": "0122-the-speed-switch-picks-which-rate-byte-the-rotor-follows",
+          "slug": "rotary-speed",
           "title": "Rotary · PH / Rotary"
         },
         {
           "id": "0123-the-flanger-and-the-chorus-share-a-front-end",
+          "slug": "flanger-chorus-front-end",
           "title": "Stereo Flanger · Stereo Chorus"
         },
         {
           "id": "0124-a-step-byte-clocks-a-hold-on-the-other-rate-byte",
+          "slug": "step-flanger-rate-step-rate",
           "title": "Step Flanger — Rate / Step Rate"
         },
         {
           "id": "0142-a-filter-byte-sits-on-one-pole",
+          "slug": "stereo-chorus-pre-filter-cutoff",
           "title": "Stereo Chorus — Pre Filter / Cutoff"
         },
         {
           "id": "0150-a-damping-byte-sits-on-the-cheapest-pole",
+          "slug": "stereo-delay-hf-damp",
           "title": "Stereo Delay — HF Damp"
         },
         {
           "id": "0160-a-pitch-byte-is-read-out-of-a-window-the-mode-byte-picks",
+          "slug": "2-pitch-shifter",
           "title": "2 Pitch Shifter — Coarse 1 / Fine 1 / Coarse 2 +2"
         },
         {
           "id": "0161-a-feedback-shifters-mode-byte-picks-the-same-five-lengths",
+          "slug": "fb-p-shifter-feedback-mode",
           "title": "Fb P.Shifter — Feedback / Mode"
         },
         {
           "id": "0172-a-degrader-byte-is-a-rate-and-something-else",
+          "slug": "lo-fi-1-lo-fi-type",
           "title": "Lo-Fi 1 — Lo-Fi Type"
         },
         {
           "id": "0173-two-noise-low-passes-index-one-table",
+          "slug": "lo-fi-2-cutoff-w-p-lpf-disc-lpf",
           "title": "Lo-Fi 2 — Cutoff / W/P LPF / Disc LPF"
         },
         {
           "id": "1107-a-renumbered-rotary-is-one-rotor-above-the-transient",
+          "slug": "rotary-in-multi",
           "title": "Rotary · Rotary Multi · OD / Rotary +1"
         },
         {
           "id": "1108-a-multi-reaches-the-single-types-block",
+          "slug": "multi-shared-block",
           "title": "Auto Wah · FL → Delay · OD / AutoWah +2"
         },
         {
           "id": "a-flanger-named-inside-a-larger-type-is-the-one-that-stands-alone",
+          "slug": "flanger-in-multi",
           "title": "Stereo Flanger · OD→ Flanger · DS → Flanger +4"
         },
         {
           "id": "amp-four-fixed-curves-after-the-drive-stage",
+          "slug": "amp-type",
           "title": "Overdrive · Distortion · OD1 / OD2 +3"
         },
         {
           "id": "azimuth-a-byte-rounded-to-a-quarter-and-clamped",
+          "slug": "azimuth",
           "title": "3D Auto · 3D Manual"
         },
         {
           "id": "balance-two-ramps-that-meet-at-full",
+          "slug": "balance",
           "title": "Stereo Delay · Tm Ctrl Delay · 3D Delay"
         },
         {
           "id": "defaults-every-parameter-powers-up-where-its-page-says",
+          "slug": "power-up-defaults",
           "title": "Phaser · Auto Wah · Rotary +48"
         },
         {
           "id": "freq-the-byte-indexes-a-third-octave-table",
+          "slug": "frequency",
           "title": "Stereo-EQ · Stereo Chorus · Stereo Delay +2"
         },
         {
           "id": "gain-the-byte-is-a-decibel-a-step",
+          "slug": "gain",
           "title": "Stereo-EQ · Stereo Chorus · Stereo Delay +2"
         },
         {
           "id": "level-the-multiplier-is-a-seventh-bit-table",
+          "slug": "level",
           "title": "Stereo-EQ · Distortion · Hexa Chorus"
         },
         {
           "id": "lo-fi-two-filter-bytes-that-share-a-printed-name",
+          "slug": "lo-fi-1-pre-filter-post-filter",
           "title": "Lo-Fi 1 — Pre Filter / Post Filter"
         },
         {
           "id": "out-the-byte-picks-two-renderings-of-one-placement",
+          "slug": "out",
           "title": "3D Auto · 3D Manual"
         },
         {
           "id": "pan-one-multiplier-a-side-under-a-term-added-after-it",
+          "slug": "pan",
           "title": "Spectrum · Compressor · Humanizer"
         },
         {
           "id": "rate-the-byte-indexes-a-printed-table",
+          "slug": "rate",
           "title": "Phaser · Auto Wah · Stereo Flanger +18"
         },
         {
           "id": "section-gain-a-shelf-stores-the-cut",
+          "slug": "stereo-eq-low-gain",
           "title": "Stereo-EQ — Low Gain"
         },
         {
           "id": "section-gain-a-stored-section-blended-with-the-dry",
+          "slug": "stereo-eq-m1-gain-m2-gain",
           "title": "Stereo-EQ — M1 Gain / M2 Gain"
         },
         {
           "id": "states-a-value-the-page-prints-no-state-for-is-not-taken",
+          "slug": "unlisted-settings",
           "title": "Stereo-EQ · Humanizer · Overdrive +9"
         },
         {
           "id": "time-the-byte-indexes-a-ladder-cut-to-whole-samples",
+          "slug": "delay-time",
           "title": "Hexa Chorus · Stereo Delay · Mod Delay +8"
         },
         {
           "id": "tone-a-pair-of-fixed-first-order-shelves",
+          "slug": "tone",
           "title": "Enhancer · Phaser · Tremolo +3"
         },
         {
           "id": "wave-the-byte-picks-one-of-five-fixed-shapes",
+          "slug": "waveform",
           "title": "Tremolo · Auto Pan · Rhodes Multi"
         },
         {
           "id": "width-the-byte-halves-the-printed-table",
+          "slug": "width",
           "title": "Stereo-EQ · GTR Multi 2 · Clean Gt Multi 1"
         }
       ],
-      "archiveBytes": 78545170,
+      "archiveBytes": 78973804,
       "catalogues": {
         "tones": true,
         "effects": true,

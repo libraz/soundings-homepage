@@ -31,6 +31,7 @@ import {
 import { Emitter } from './lib/emit.mjs';
 import { highlighter } from './lib/highlight.mjs';
 import { Inferences, indexOf, prose } from './lib/inferences.mjs';
+import { collisionsWithin, resolveSlug } from './lib/slugs.mjs';
 import { classifyVocabulary } from './lib/vocab.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -39,6 +40,7 @@ const sourceRoot = resolve(process.env.SOUNDINGS_ROOT ?? join(siteRoot, '..', 's
 
 const dataDir = join(siteRoot, 'src', 'data');
 const publicDataDir = join(siteRoot, 'src', 'public', 'data');
+const redirectsPath = join(siteRoot, 'src', 'public', '_redirects');
 const docsDir = join(siteRoot, 'src', 'docs', 'protocol');
 const jaDocsDir = join(siteRoot, 'src', 'ja', 'docs', 'protocol');
 
@@ -60,6 +62,7 @@ async function main() {
 
   const legend = readOwnJson('legend.json');
   const quirks = readOwnJson('quirks.json');
+  const slugs = readOwnJson('slugs.json');
   const archive = new Archive(sourceRoot);
   const documents = new Documents(sourceRoot);
   const inferences = new Inferences(sourceRoot, await highlighter());
@@ -77,6 +80,10 @@ async function main() {
   const inferenceProse = new Set();
   /** @type {string[]} */
   const warnings = [];
+  // Every claim's old, id-named URL beside its slug-named one, so a link or a
+  // bookmark to the id survives the rename. One line per claim per locale.
+  /** @type {string[]} */
+  const redirects = [];
 
   for (const unitId of archive.unitIds()) {
     const unit = archive.unit(unitId);
@@ -204,14 +211,43 @@ async function main() {
     // is what the unit's page opens with.
     const claimed = inferences.printedAs(claims.printed).load(unitId, warnings);
     prose(claimed, inferenceProse);
+    // The URL a claim's page sits at, resolved before anything else reads
+    // `inference.slug` — the index (`indexOf`) and `units.json` both do.
+    for (const inference of claimed) {
+      const { slug, underived } = resolveSlug(inference.id, inference.title, slugs);
+      inference.slug = slug;
+      if (underived) {
+        warnings.push(
+          `${unitId}: ${inference.id} has no single printed name to derive a slug from ` +
+            'and no entry in src/data/slugs.json; its page keeps the archive id as its URL',
+        );
+      }
+    }
+    for (const collision of collisionsWithin(claimed)) {
+      warnings.push(
+        `${unitId}: slug ${JSON.stringify(collision.slug)} is shared by ${collision.ids.join(', ')}`,
+      );
+    }
     for (const inference of claimed) {
       // The citation travels with the claim. A claim headed by the name a
       // manual prints is a claim carrying a statement out of that manual, and
       // every one of those on this site says which edition and which page.
-      emit.json(join(unitDir, 'algorithms', `${inference.id}.json`), {
+      emit.json(join(unitDir, 'algorithms', `${inference.slug}.json`), {
         ...inference,
         documents: claims.cited,
       });
+      // The old, id-named URL a bookmark or an inbound link may still hold —
+      // one line per renamed claim per locale, skipped where the slug fell
+      // back to the id itself, which would otherwise redirect a path to
+      // itself.
+      if (inference.slug !== inference.id) {
+        for (const locale of ['', '/ja']) {
+          redirects.push(
+            `${locale}/units/${unitId}/algorithms/${inference.id} ` +
+              `${locale}/units/${unitId}/algorithms/${inference.slug} 301`,
+          );
+        }
+      }
     }
     if (claimed.length > 0) {
       emit.json(join(unitDir, 'algorithms.json'), {
@@ -243,6 +279,7 @@ async function main() {
       // apart. A claim no document names keeps the section's title.
       algorithms: claimed.map((inference) => ({
         id: inference.id,
+        slug: inference.slug,
         title: headingOf(inference.title),
       })),
       archiveBytes: unit.size(),
@@ -275,6 +312,11 @@ async function main() {
     // for where that line is drawn and why.
     inferences: [...inferenceProse].sort(),
   });
+
+  // No header comment: the DoD checks this file's line count against exactly
+  // one line per renamed claim per locale, and Cloudflare Pages reads
+  // `_redirects` fine without one.
+  emit.write(redirectsPath, redirects.map((line) => `${line}\n`).join(''));
 
   copyDocs(archive, emit);
 
