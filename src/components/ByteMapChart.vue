@@ -20,11 +20,40 @@ import RecordLink from './RecordLink.vue';
  *
  * No second hue. The site's four colours stand for the four things a
  * measurement can be, and neither a curve nor a reading is one of them, so both
- * are the readout's own ink at two strengths.
+ * are the readout's own ink at two strengths. The verdict is told apart the
+ * same way — solid against dashed, and a sentence above the figure — and never
+ * with the accent, which says a model closed and would read inside a figure as
+ * a fifth thing the unit answered.
  */
 const props = defineProps<{ chart: AlgorithmChart; unitId: string }>();
 
 const { t, verbatim } = useI18n();
+
+/** The two verdicts that close a comparison. */
+const CLOSED = ['reproduces', 'equivalent_under_this_test'];
+
+/**
+ * Whether the model behind this curve closed.
+ *
+ * Read off the curve's own verdict and never off the claim's standing: a claim
+ * the archive stopped working on can hold a model that reproduced the readings,
+ * and the figure states what the model did while the page around it states how
+ * far the reading of the claim got.
+ */
+const closed = computed(() => CLOSED.includes(props.chart.verdict ?? ''));
+
+/** The verdict, worded, where there is one to state. A null verdict is a state of its own. */
+const verdict = computed(() =>
+  closed.value ? null : t(`algorithms.verdict.${props.chart.verdict ?? 'null'}`),
+);
+
+/**
+ * A curve from a model that did not close is worth seeing beside the readings
+ * it failed to follow, and worth seeing only there. Where the map names none,
+ * what would be left is a rejected law drawn on its own with nothing to check
+ * it against, so the sentence saying that takes the figure's place.
+ */
+const drawn = computed(() => closed.value || props.chart.marks.length > 0);
 
 /** The plot box inside the SVG's own coordinate space. */
 const BOX = { left: 46, right: 8, top: 10, bottom: 22, width: 320, height: 132 };
@@ -150,7 +179,10 @@ const within = computed(() => {
       <span class="chart__byte sg-readout">{{ heading }}</span>
     </figcaption>
 
+    <p v-if="verdict" class="chart__verdict">{{ verdict }}</p>
+
     <svg
+      v-if="drawn"
       class="chart__plot"
       :viewBox="`0 0 ${BOX.width} ${BOX.height}`"
       role="img"
@@ -173,7 +205,7 @@ const within = computed(() => {
         <text :x="PLOT.x + PLOT.width" :y="BOX.height - 6" text-anchor="end">127</text>
       </g>
 
-      <polyline class="chart__line" :points="line" />
+      <polyline class="chart__line" :class="{ 'chart__line--open': !closed }" :points="line" />
 
       <circle
         v-for="dot in dots"
@@ -187,9 +219,15 @@ const within = computed(() => {
       </circle>
     </svg>
 
-    <dl class="chart__key">
+    <dl v-if="drawn" class="chart__key">
       <div class="chart__keyItem">
-        <dt><span class="chart__swatch chart__swatch--line" aria-hidden="true" /></dt>
+        <dt>
+          <span
+            class="chart__swatch chart__swatch--line"
+            :class="{ 'chart__swatch--open': !closed }"
+            aria-hidden="true"
+          />
+        </dt>
         <dd>{{ t('algorithms.modelCurve') }}</dd>
       </div>
       <div v-if="dots.length" class="chart__keyItem">
@@ -197,6 +235,8 @@ const within = computed(() => {
         <dd>{{ t('algorithms.readings') }}</dd>
       </div>
     </dl>
+
+    <p v-else class="chart__undrawn sg-sunk">{{ t('algorithms.chartNotDrawn') }}</p>
 
     <p v-if="chart.why" class="chart__why">{{ verbatim(chart.why) }}</p>
 
@@ -258,6 +298,13 @@ const within = computed(() => {
   vector-effect: non-scaling-stroke;
 }
 
+/* A model that did not close, in the same ink and broken. Nothing about the
+   line's colour changes: the distinction is the stroke and the sentence above
+   it, because a second hue here would read as a fifth answer. */
+.chart__line--open {
+  stroke-dasharray: 4 3;
+}
+
 /* A setting a run actually asked at. Filled, for the same reason a cell in the
    address grid is filled when something is behind it. */
 .chart__mark {
@@ -299,11 +346,30 @@ const within = computed(() => {
   border-top: 1.25px solid color-mix(in srgb, var(--sg-readout) 45%, transparent);
 }
 
+.chart__swatch--open {
+  border-top-style: dashed;
+}
+
 .chart__swatch--mark {
   inline-size: 0.4rem;
   block-size: 0.4rem;
   border-radius: var(--radius-full);
   background: var(--sg-readout);
+}
+
+/* The sentence the dashed curve is read under, and the one standing where a
+   curve is not drawn at all. The second sits in the figure's own place so the
+   figure is never a blank. */
+.chart__verdict,
+.chart__undrawn {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+.chart__undrawn {
+  padding: var(--space-3) var(--space-4);
 }
 
 .chart__why,
