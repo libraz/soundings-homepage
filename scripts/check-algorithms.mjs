@@ -26,10 +26,12 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LEVELS } from './lib/inferences.mjs';
+import { collisionsWithin, resolveSlug } from './lib/slugs.mjs';
 
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const publicDataDir = join(siteRoot, 'src', 'public', 'data');
 const localesDir = join(siteRoot, 'src', 'locales');
+const dataDir = join(siteRoot, 'src', 'data');
 
 /** @param {string} path */
 function readJson(path) {
@@ -39,12 +41,16 @@ function readJson(path) {
 /** Where a cited path may point. Anything else is a citation of nothing. */
 const CITABLE = /^(data\/units\/|documents\/|inferences\/)/;
 
+const slugOverrides = readJson(join(dataDir, 'slugs.json'));
+
 /** @type {string[]} */
 const problems = [];
 /** @type {Set<string>} */
 const levels = new Set();
 /** @type {Set<string>} */
 const verdicts = new Set();
+/** Every claim id seen while opening a shard, so a stale slugs.json entry can be caught. */
+const claimIds = new Set();
 let claims = 0;
 let examples = 0;
 let charts = 0;
@@ -70,21 +76,37 @@ for (const unitId of units) {
     .filter((name) => name.endsWith('.json'))
     .map((name) => name.slice(0, -'.json'.length))
     .sort();
-  const listed = index.inferences.map((entry) => entry.id).sort();
+  const listed = index.inferences.map((entry) => entry.slug).sort();
   if (JSON.stringify(listed) !== JSON.stringify(shards)) {
     problems.push(
       `${unitId}/algorithms.json lists ${listed.length} claims and algorithms/ holds ${shards.length}`,
     );
   }
 
-  const byId = new Map(index.inferences.map((entry) => [entry.id, entry]));
+  const bySlug = new Map(index.inferences.map((entry) => [entry.slug, entry]));
+  /** @type {{id: string, slug: string}[]} */
+  const unitSlugs = [];
 
   for (const id of shards) {
     const shard = readJson(join(dir, `${id}.json`));
     claims += 1;
+    claimIds.add(shard.id);
     levels.add(shard.level);
     if (shard.verdict) verdicts.add(shard.verdict);
     charts += shard.charts.length;
+
+    // Every claim must resolve to a URL segment: a hand-authored override in
+    // slugs.json, or one this module can derive from the printed name the
+    // claim is headed with. A claim resolveSlug cannot slug falls back to its
+    // archive id, which is what `underived` is warning about.
+    const resolved = resolveSlug(shard.id, shard.title ?? null, slugOverrides);
+    if (resolved.underived) {
+      problems.push(
+        `${unitId}/${id}: resolves to no slug — neither the printed title nor slugs.json ` +
+          `names one, so its page would sit at the bare archive id`,
+      );
+    }
+    unitSlugs.push({ id: shard.id, slug: resolved.slug });
 
     if (!LEVELS.includes(shard.level)) {
       problems.push(
@@ -169,7 +191,7 @@ for (const unitId of units) {
       }
     }
 
-    const line = byId.get(id);
+    const line = bySlug.get(id);
     if (!line) {
       problems.push(`${unitId}: algorithms/${id}.json has no line in algorithms.json`);
       continue;
@@ -198,6 +220,23 @@ for (const unitId of units) {
     if (counted[level] !== seen) {
       problems.push(`${unitId}: counted ${counted[level]} ${level} and lists ${seen}`);
     }
+  }
+
+  // The route is /units/<unit>/algorithms/<slug>, so uniqueness is per unit —
+  // the same slug landing on two claims here is two pages fighting for one URL.
+  for (const collision of collisionsWithin(unitSlugs)) {
+    problems.push(
+      `${unitId}: ${collision.ids.length} claims resolve to the same slug ` +
+        `${JSON.stringify(collision.slug)} — ${collision.ids.join(', ')}`,
+    );
+  }
+}
+
+// Nothing in slugs.json should name a claim that no longer exists.
+for (const id of Object.keys(slugOverrides)) {
+  if (id === 'note') continue;
+  if (!claimIds.has(id)) {
+    problems.push(`slugs.json: ${JSON.stringify(id)} is declared but no claim has that id`);
   }
 }
 
