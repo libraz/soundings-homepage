@@ -588,7 +588,19 @@ export interface AlgorithmShard {
     residual: Record<string, unknown> | null;
     gates: AlgorithmGate[];
   } | null;
-  models: { label: string | null; path: string; kind: string | null }[];
+  /**
+   * `class` and `of` are the archive's own answer to what the model is about,
+   * carried over from the model file. Either can be absent — thirteen of the
+   * models state a class and no `of` — and an absent one is shown as not
+   * stated rather than filled in from the claim around it.
+   */
+  models: {
+    label: string | null;
+    path: string;
+    kind: string | null;
+    class: string | null;
+    of: string | null;
+  }[];
   charts: AlgorithmChart[];
   examples: AlgorithmExample[];
   /** every field the record holds that the reader has no home for */

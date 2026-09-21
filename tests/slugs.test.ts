@@ -142,10 +142,10 @@ describe('collisionsWithin', () => {
   });
 });
 
-describe('the 37 real shards for roland-sc8850-01', () => {
-  it('resolves every claim — 16 by derivation, 21 by slugs.json, 0 underived', () => {
+describe('the 39 real shards for roland-sc8850-01', () => {
+  it('resolves every claim — 17 by derivation, 22 by slugs.json, 0 underived', () => {
     const claims = realClaims();
-    expect(claims).toHaveLength(37);
+    expect(claims).toHaveLength(39);
 
     const resolved = claims.map(({ id, title }) => ({
       id,
@@ -158,8 +158,8 @@ describe('the 37 real shards for roland-sc8850-01', () => {
     const derived = resolved.filter((entry) => !entry.manual && !entry.underived);
 
     expect(underived).toEqual([]);
-    expect(manual).toHaveLength(21);
-    expect(derived).toHaveLength(16);
+    expect(manual).toHaveLength(22);
+    expect(derived).toHaveLength(17);
   });
 
   it('has no slug collisions within the unit', () => {

@@ -692,6 +692,11 @@
           "title": "Step Flanger — Rate / Step Rate"
         },
         {
+          "id": "0131-a-threshold-byte-is-decibels-and-one-state-of-four-is-a-ratio",
+          "slug": "limiter-threshold-ratio",
+          "title": "Limiter — Threshold / Ratio"
+        },
+        {
           "id": "0142-a-filter-byte-sits-on-one-pole",
           "slug": "stereo-chorus-pre-filter-cutoff",
           "title": "Stereo Chorus — Pre Filter / Cutoff"
@@ -787,6 +792,11 @@
           "title": "Spectrum · Compressor · Humanizer"
         },
         {
+          "id": "post-gain-four-fixed-steps-of-six-decibels",
+          "slug": "post-gain",
+          "title": "Compressor · Limiter"
+        },
+        {
           "id": "rate-the-byte-indexes-a-printed-table",
           "slug": "rate",
           "title": "Phaser · Auto Wah · Stereo Flanger +18"
@@ -827,7 +837,7 @@
           "title": "Stereo-EQ · GTR Multi 2 · Clean Gt Multi 1"
         }
       ],
-      "archiveBytes": 78973804,
+      "archiveBytes": 78986165,
       "catalogues": {
         "tones": true,
         "effects": true,

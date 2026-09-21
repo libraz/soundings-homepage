@@ -20,5 +20,6 @@
   "0123-the-flanger-and-the-chorus-share-a-front-end": "flanger-chorus-front-end",
   "1107-a-renumbered-rotary-is-one-rotor-above-the-transient": "rotary-in-multi",
   "1108-a-multi-reaches-the-single-types-block": "multi-shared-block",
-  "a-flanger-named-inside-a-larger-type-is-the-one-that-stands-alone": "flanger-in-multi"
+  "a-flanger-named-inside-a-larger-type-is-the-one-that-stands-alone": "flanger-in-multi",
+  "post-gain-four-fixed-steps-of-six-decibels": "post-gain"
 }

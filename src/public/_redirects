@@ -18,6 +18,8 @@
 /ja/units/roland-sc8850-01/algorithms/0123-the-flanger-and-the-chorus-share-a-front-end /ja/units/roland-sc8850-01/algorithms/flanger-chorus-front-end 301
 /units/roland-sc8850-01/algorithms/0124-a-step-byte-clocks-a-hold-on-the-other-rate-byte /units/roland-sc8850-01/algorithms/step-flanger-rate-step-rate 301
 /ja/units/roland-sc8850-01/algorithms/0124-a-step-byte-clocks-a-hold-on-the-other-rate-byte /ja/units/roland-sc8850-01/algorithms/step-flanger-rate-step-rate 301
+/units/roland-sc8850-01/algorithms/0131-a-threshold-byte-is-decibels-and-one-state-of-four-is-a-ratio /units/roland-sc8850-01/algorithms/limiter-threshold-ratio 301
+/ja/units/roland-sc8850-01/algorithms/0131-a-threshold-byte-is-decibels-and-one-state-of-four-is-a-ratio /ja/units/roland-sc8850-01/algorithms/limiter-threshold-ratio 301
 /units/roland-sc8850-01/algorithms/0142-a-filter-byte-sits-on-one-pole /units/roland-sc8850-01/algorithms/stereo-chorus-pre-filter-cutoff 301
 /ja/units/roland-sc8850-01/algorithms/0142-a-filter-byte-sits-on-one-pole /ja/units/roland-sc8850-01/algorithms/stereo-chorus-pre-filter-cutoff 301
 /units/roland-sc8850-01/algorithms/0150-a-damping-byte-sits-on-the-cheapest-pole /units/roland-sc8850-01/algorithms/stereo-delay-hf-damp 301
@@ -56,6 +58,8 @@
 /ja/units/roland-sc8850-01/algorithms/out-the-byte-picks-two-renderings-of-one-placement /ja/units/roland-sc8850-01/algorithms/out 301
 /units/roland-sc8850-01/algorithms/pan-one-multiplier-a-side-under-a-term-added-after-it /units/roland-sc8850-01/algorithms/pan 301
 /ja/units/roland-sc8850-01/algorithms/pan-one-multiplier-a-side-under-a-term-added-after-it /ja/units/roland-sc8850-01/algorithms/pan 301
+/units/roland-sc8850-01/algorithms/post-gain-four-fixed-steps-of-six-decibels /units/roland-sc8850-01/algorithms/post-gain 301
+/ja/units/roland-sc8850-01/algorithms/post-gain-four-fixed-steps-of-six-decibels /ja/units/roland-sc8850-01/algorithms/post-gain 301
 /units/roland-sc8850-01/algorithms/rate-the-byte-indexes-a-printed-table /units/roland-sc8850-01/algorithms/rate 301
 /ja/units/roland-sc8850-01/algorithms/rate-the-byte-indexes-a-printed-table /ja/units/roland-sc8850-01/algorithms/rate 301
 /units/roland-sc8850-01/algorithms/section-gain-a-shelf-stores-the-cut /units/roland-sc8850-01/algorithms/stereo-eq-low-gain 301

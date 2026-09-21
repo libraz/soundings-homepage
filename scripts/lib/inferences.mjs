@@ -423,7 +423,21 @@ function resolveModels({ reproduces, inferences, unitId, id, warnings }) {
       warnings.push(`${unitId}/${id}: names model ${path}, which is not in the archive`);
       return [];
     }
-    return [{ label, path, model, reproduces, kind: model.model?.kind ?? null }];
+    // `class` and `of` are the archive's own two-line answer to what a model is
+    // about — the same pair `model-cpp.mjs` prints on the banner's first line.
+    // They are carried so a page can head a claim with them without reading the
+    // model file or parsing the banner back out of the example.
+    return [
+      {
+        label,
+        path,
+        model,
+        reproduces,
+        kind: model.model?.kind ?? null,
+        class: model.model?.class ?? null,
+        of: model.model?.of ?? null,
+      },
+    ];
   });
 }
 
