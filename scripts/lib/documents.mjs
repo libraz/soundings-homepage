@@ -44,6 +44,7 @@ export class Documents {
     const parsed = read('address-map.json');
     const byHand = read('by-hand.json');
     const effects = read('effect-list.json');
+    const conversion = read('value-conversion.json');
     // Every table the hand-kept file holds has to be read by something here. A
     // table it holds that nothing reads is rows somebody cut out of a page by
     // hand and this site is not showing, which is how a thousand joined claims
@@ -73,6 +74,10 @@ export class Documents {
         : null,
       qualifications: read('qualifications.json'),
       statements: read('statements.json'),
+      // The table an effect-list row's `values_hex` can point into: one column
+      // per printed unit, not merged with by-hand rows because no document has
+      // put one there yet.
+      valueConversion: conversion,
     };
   }
 }
@@ -488,6 +493,40 @@ function mergedEffectRows(parsed, byHand, id) {
 }
 
 /**
+ * The conversion column an effect-list row's `values_hex` names, or null.
+ *
+ * The field holds the raw printed values in most rows (`00–7F`, `34–4C`,
+ * `00/01/02`) and only sometimes a reference into the value-conversion table
+ * (`*4`). Only the reference form is a column; every other form, including a
+ * missing field, carries nothing rather than a guessed one.
+ * @param {string | undefined} valuesHex
+ */
+function conversionColumn(valuesHex) {
+  const match = (valuesHex ?? '').match(/^\*(\d+)$/);
+  return match ? Number(match[1]) : null;
+}
+
+/**
+ * The unit each value-conversion column is printed with, keyed by column
+ * number.
+ *
+ * A column's rows mostly repeat its unit and sometimes name the effect types
+ * that index it instead, which carry no unit of their own — so the map takes
+ * the first unit a column's rows actually state, and a column none of them
+ * state one for (the table's last column, an acceleration curve) is absent
+ * here rather than defaulted.
+ * @param {any} valueConversion as `Documents.load` returns it
+ */
+function conversionUnits(valueConversion) {
+  /** @type {Map<number, string>} */
+  const units = new Map();
+  for (const row of valueConversion?.rows ?? []) {
+    if (row.unit && !units.has(row.column)) units.set(row.column, row.unit);
+  }
+  return units;
+}
+
+/**
  * What a document prints each insertion effect type and each of its parameters
  * as.
  *
@@ -505,14 +544,25 @@ function mergedEffectRows(parsed, byHand, id) {
 export function printedEffects(document) {
   /** @type {Map<string, {name: string, number: string | null, page: number}>} */
   const types = new Map();
-  /** @type {Map<string, {name: string, page: number}>} */
+  /**
+   * @type {Map<string, {name: string, page: number, data: string | null,
+   *   column: number | null, unit: string | null}>}
+   */
   const parameters = new Map();
+  const units = conversionUnits(document.valueConversion);
   for (const row of document.effectList?.rows ?? []) {
     if (!row.msb || !row.lsb) continue;
     const type = `${row.msb} ${row.lsb}`;
     if (row.address_lsb) {
       if (!row.parameter) continue;
-      parameters.set(`${type}/${row.address_lsb}`, { name: row.parameter, page: row.page });
+      const column = conversionColumn(row.values_hex);
+      parameters.set(`${type}/${row.address_lsb}`, {
+        name: row.parameter,
+        page: row.page,
+        data: row.data ?? null,
+        column,
+        unit: column === null ? null : (units.get(column) ?? null),
+      });
       continue;
     }
     if (!row.effect || types.has(type)) continue;

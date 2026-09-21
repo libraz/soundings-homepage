@@ -153,7 +153,16 @@ export function buildEffects(unit, legend, vocab, printed) {
       : null;
     for (const parameter of effect.parameters ?? []) {
       const row = printed?.parameters.get(`${effect.type}/${parameter.address.slice(-2)}`);
-      parameter.printed = row ? { name: row.name, page: row.page, document: row.document } : null;
+      parameter.printed = row
+        ? {
+            name: row.name,
+            page: row.page,
+            document: row.document,
+            data: row.data,
+            column: row.column,
+            unit: row.unit,
+          }
+        : null;
     }
   }
 
