@@ -401,6 +401,8 @@
       "gatesFailed": "Gates not passed",
       "gatesNotStated": "Gates not stated",
       "gatesNotStatedBody": "No verdict was recorded for this gate. That is not the same as passing it or failing it — it was never put to the test.",
+      "gatesUnread": "Gates left as they came back",
+      "gatesUnreadBody": "The gate returned a verdict and the archive did not read a pass or a failure into it. What it returned is shown here as the archive wrote it.",
       "outsideDomain": "Outside the domain asked",
       "alternatives": "Readings the same evidence still leaves standing",
       "refutedBy": "What would show it wrong",
